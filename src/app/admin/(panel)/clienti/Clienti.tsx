@@ -3,7 +3,7 @@ import ResourceManager from "@/components/admin/ResourceManager";
 import { formatEUR } from "@/lib/pricing";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const last = (cs: any[], k: string) => cs.find(c => c.kind === k)?.granted;
-const messages: Record<string, string> = { sent: "Inviata", queued: "In attesa", sending: "Invio in corso", failed: "Invio non riuscito", skipped_not_configured: "Servizio da configurare" };
+const messages: Record<string, string> = { sent: "Accettata dal servizio email", queued: "In attesa", sending: "Invio in corso", delivery_unknown: "Esito da verificare con il servizio email", failed: "Invio non riuscito", skipped_not_configured: "Servizio da configurare" };
 export default function Clienti() {
   return <ResourceManager resource="customers" title="Rubrica clienti"
     fields={[{ name: "name", label: "Nome", required: true }, { name: "email", label: "Email" }, { name: "phone", label: "Telefono" }, { name: "preferences", label: "Preferenze comunicate dal cliente", type: "textarea" }, { name: "privateNotes", label: "Note operative riservate", type: "textarea" }]}

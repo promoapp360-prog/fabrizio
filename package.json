@@ -10,6 +10,7 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "test": "vitest run",
+    "check:public": "node scripts/check-public-parity.mjs",
     "lint": "next lint",
     "postinstall": "prisma generate",
     "db:deploy": "sh -c 'if [ -d prisma/migrations ]; then prisma migrate deploy; else prisma db push; fi'",
