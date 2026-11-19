@@ -1,11 +1,11 @@
 import { db } from "./db";
-import { RESTAURANT_CONTACTS } from "./restaurant-content";
+import { RESTAURANT_CONTACTS, RESTAURANT_HOURS } from "./restaurant-content";
 // Impostazioni con valori di default: l'admin le sovrascrive da /admin/impostazioni.
 export const DEFAULTS = {
   brand: { name: "Vecciarì", tagline: "Grano & Brace", motto: "Matera", logo: "/brand/logo-naming-oro.webp", mark: "/brand/fiamma-oro.webp", favicon: "/icon-192.png",
     colors: { ink: "10 10 8", coal: "22 20 16", gold: "233 194 58", goldDeep: "201 150 30", cream: "250 246 236" } },
   contacts: { ...RESTAURANT_CONTACTS, email: "", mapsUrl: "", instagram: "https://www.instagram.com/vecciari_granoebrace/", facebook: "https://www.facebook.com/share/1EZLANWssE/?mibextid=wwXIfr",
-    hours: "" },
+    hours: RESTAURANT_HOURS },
   ordering: { tableEnabled: true, takeawayEnabled: false, deliveryEnabled: false, payAtTable: true, payAtCounter: true, stripeEnabled: false, payTiming: "END" as "END" | "ADVANCE",
     prepMinutes: 30, deliveryMinCents: 3000, deliveryFeeCents: 300, deliveryZones: "" },
   reservations: { autoConfirm: false, durationMin: 120, maxPartyOnline: 10, minNoticeMin: 60 },

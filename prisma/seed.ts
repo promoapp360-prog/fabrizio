@@ -94,8 +94,8 @@ async function main() {
 
   // Turni demo
   if (!(await db.shift.count())) await db.shift.createMany({ data: [
-    { name: "Pranzo", weekdays: [2, 3, 4, 5, 6, 0], start: "12:30", end: "15:00", slotMinutes: 30, maxCovers: 40 },
-    { name: "Cena", weekdays: [2, 3, 4, 5, 6, 0], start: "19:30", end: "23:30", slotMinutes: 30, maxCovers: 60 },
+    { name: "Pranzo", weekdays: [2, 3, 4, 5, 6, 0], start: "12:00", end: "15:00", slotMinutes: 30, maxCovers: 40 },
+    { name: "Cena", weekdays: [2, 3, 4, 5, 6, 0], start: "19:00", end: "23:00", slotMinutes: 30, maxCovers: 60 },
   ] });
 
   // Pagine e sezioni CMS

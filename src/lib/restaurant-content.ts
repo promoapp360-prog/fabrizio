@@ -1,4 +1,6 @@
 // Informazioni del locale confermate dal cliente. Nessun prezzo è impostato qui.
+export const RESTAURANT_HOURS = "Da martedì a domenica\nPranzo 12:00–15:00 · Cena 19:00–23:00\nLunedì chiuso";
+
 export const RESTAURANT_CONTACTS = {
   address: "Via XX Settembre 14, 75100 Matera",
   phone: "+39 393 138 0073",
