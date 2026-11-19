@@ -55,8 +55,8 @@ h1, h2, h3, .display { @apply font-display uppercase tracking-tight; }
   .hero-mark { height: clamp(85px,8vw,130px); }
   .hero-name { margin-top: 12px; font-size: clamp(2.75rem,5.5vw,5rem); font-weight: 400; }
   .hero-location { margin-top: 8px; font-size: 14px; line-height: 20px; letter-spacing: .5em; padding-left: 0; }
-  .hero-actions { margin-top: 32px; width: 100%; flex-direction: row; gap: 10px; transform: translateY(max(24px,2.6vw)); }
-  .hero-actions .btn-gold, .hero-actions .btn-ghost { min-height: 38px; padding: 8px 18px; font-size: 13px; }
+  .hero-actions { margin-top: 32px; width: 100%; flex-direction: row; gap: 10px; transform: translateY(max(14px,1.8vw)); }
+  .hero-actions .btn-gold, .hero-actions .btn-ghost { min-height: 42px; padding: 9px 20px; font-size: 14px; }
 }
 @keyframes reveal { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .reveal { animation: none; } html { scroll-behavior: auto; } }
