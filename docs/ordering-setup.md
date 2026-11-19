@@ -20,7 +20,7 @@ I prodotti a peso hanno un totale indicativo: il personale inserisce il peso,
 conferma l'importo e registra il pagamento. Doppi clic non creano doppi ordini
 o doppi pagamenti.
 
-## Email (da collegare al solo cliente Vecciarì)
+## Email (solo cliente Vecciarì)
 
 Automatismi: ricezione, cambi stato, totale definitivo e pagamento registrato.
 SMTP è pronto ma non si dichiarano invii riusciti senza risposta del provider.
@@ -32,6 +32,24 @@ pubblico di produzione verificato, mai all'anteprima.
 Gli esiti sono visibili in Clienti > Comunicazioni. La Sala può riprovare la
 conferma dall'ordine dopo la configurazione; una conferma già inviata non viene
 duplicata. Le comunicazioni di servizio non richiedono né attivano marketing.
+
+Per Gmail usare `smtp.gmail.com`, porta `465`, l'indirizzo del cliente come
+`SMTP_USER` e `MAIL_FROM`, e una password per le app in `SMTP_PASSWORD`
+(richiede verifica in due passaggi Google). Non usare la password ordinaria
+né il collegamento Gmail di altri account. Non salvare credenziali nel repository.
+
+`sent` significa destinatario accettato dal server SMTP, non lettura né
+consegna garantita in Posta in arrivo. I rifiuti espliciti sono `failed`.
+Un'interruzione con esito incerto è `delivery_unknown`: non viene reinviata
+automaticamente, per evitare doppioni. Anche `sending` resta bloccato se il
+processo termina dopo l'invio: verificare con il provider prima di intervenire.
+
+Verifica manuale autorizzata: `npx tsx scripts/check-order-email.ts DESTINATARIO --send`.
+Invia quattro messaggi chiaramente etichettati come prova tecnica (ricezione,
+stato pronto, totale definitivo, pagamento), usando gli stessi contenuti e
+trasporto dell'app. Registra soltanto notifiche di prova, non ordini o pagamenti,
+e verifica un secondo tentativo con la stessa chiave senza reinviare.
+Richiedere poi al destinatario la conferma di ricezione, anche controllando Spam.
 
 ## Stripe: predisposto, non collegato
 
