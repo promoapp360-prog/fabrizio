@@ -16,10 +16,9 @@ export const viewport: Viewport = { themeColor: "#0A0A08", width: "device-width"
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const { brand } = await getSettings();
   const c = brand.colors;
-  const vars = `:root{--c-ink:${c.ink};--c-coal:${c.coal};--c-gold:${c.gold};--c-gold-deep:${c.goldDeep};--c-cream:${c.cream};}`;
+  const vars = { "--c-ink": c.ink, "--c-coal": c.coal, "--c-gold": c.gold, "--c-gold-deep": c.goldDeep, "--c-cream": c.cream } as React.CSSProperties;
   return (
-    <html lang="it">
-      <head><style dangerouslySetInnerHTML={{ __html: vars }} /></head>
+    <html lang="it" style={vars}>
       <body>{children}</body>
     </html>
   );
