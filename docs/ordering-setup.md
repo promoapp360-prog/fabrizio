@@ -1,6 +1,9 @@
 # Ordini Vecciarì
 
 Il catalogo in Admin è l'unica fonte dei prezzi. I prezzi iniziali sono modificabili.
+La migrazione dedicata configura una sola volta prezzi ancora da confermare e
+modalità tavolo/asporto anche nel database pubblicato, quando si approva la
+pubblicazione di questa versione. Non modifica prezzi già confermati dall'Admin.
 Eseguire `npx tsx scripts/configure-ordering.ts` solo per la prima configurazione:
 non modifica prezzi già confermati dall'Admin. Non viene eseguito all'avvio.
 
