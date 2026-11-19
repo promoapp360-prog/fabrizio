@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { priceLabel, type PriceMode } from "@/lib/pricing";
 import type { Settings } from "@/lib/settings";
 import { loadMenu } from "@/lib/menu";
+import { getMapsDirectionsUrl, getMapsEmbedUrl } from "@/lib/maps";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type C = Record<string, any>;
@@ -53,7 +54,7 @@ export async function SectionRenderer({ type, c, s }: { type: string; c: C; s: S
           <p className="mt-3 max-w-2xl text-xs leading-relaxed text-cream/50">Immagini generate a scopo illustrativo; non attestano provenienza o disponibilità delle carni.</p>
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{breeds.map(b => (
             <Link key={b.id} href={`/carne/razze/${b.slug}`} className="group card relative overflow-hidden hover:border-gold/50">
-              <div className="relative -m-5 mb-4 aspect-[4/5] overflow-hidden bg-ink">
+              <div className="relative -m-5 mb-4 aspect-[8/5] overflow-hidden bg-ink">
                 <img src={b.images[0] ?? "/brand/texture-oro.webp"} alt={`Immagine illustrativa del taglio ${b.name}`} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
                 <span className="absolute bottom-3 left-3 rounded bg-ink/75 px-2 py-1 text-[10px] uppercase tracking-wider text-cream/75">Immagine illustrativa</span>
               </div>
@@ -98,10 +99,9 @@ export async function SectionRenderer({ type, c, s }: { type: string; c: C; s: S
           <div className="mt-8 flex flex-wrap gap-3">
             {s.contacts.phone && <a className="btn-ghost" href={`tel:${s.contacts.phone.replace(/[^\d+]/g, "")}`}>Chiama per prenotare</a>}
             {s.contacts.whatsapp && <a className="btn-ghost" href={`https://wa.me/${s.contacts.whatsapp.replace(/\D/g, "")}`}>WhatsApp</a>}
-            {s.contacts.mapsUrl && <a className="btn-ghost" href={s.contacts.mapsUrl}>Indicazioni</a>}
+            <a className="btn-ghost" href={getMapsDirectionsUrl(s.contacts.address, s.contacts.mapsUrl)} target="_blank" rel="noopener noreferrer">Come arrivare</a>
           </div></div>
-        {process.env.GOOGLE_MAPS_EMBED_URL ? <iframe title="Mappa" src={process.env.GOOGLE_MAPS_EMBED_URL} className="h-80 w-full rounded-2xl border-0" loading="lazy" />
-          : <div className="card flex h-80 items-center justify-center text-center text-cream/50">Mappa non ancora configurata</div>}
+        <iframe title="Mappa per raggiungere Vecciarì" src={getMapsEmbedUrl(s.contacts.address)} className="h-80 w-full rounded-2xl border-0" loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
       </section>);
     default: return null;
   }

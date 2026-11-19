@@ -26,7 +26,7 @@ export default async function Taglio({ params: pendingParams }: { params: Promis
         <div><p className="text-lg leading-relaxed text-cream/80">{c.description}</p>
           {zone && <svg viewBox="100 60 640 300" className="mt-8 w-full" aria-label={`Posizione: ${zone.label}`}>{ZONES.map(z => <path key={z.id} d={z.d} fill={z.id === zone.id ? "rgb(var(--c-gold))" : "rgb(var(--c-coal))"} stroke="rgb(var(--c-gold) / .5)" />)}</svg>}
         </div>
-        <div>{c.images[0] && <img src={c.images[0]} alt={c.name} className="mb-4 aspect-[4/3] w-full rounded-2xl object-cover" />}
+        <div>{c.images[0] && <img src={c.images[0]} alt={c.name} className="mb-4 aspect-[8/3] w-full rounded-2xl object-cover" />}
           <dl className="card divide-y divide-cream/10">{rows.filter(([, v]) => v).map(([k, v]) => <div key={k} className="py-3"><dt className="label">{k}</dt><dd>{v}</dd></div>)}</dl></div>
       </div>
       {!!c.breeds.length && <section className="mt-12"><h2 className="text-2xl">Razze</h2><div className="mt-4 flex flex-wrap gap-3">{c.breeds.map(({ breed }) => <Link key={breed.id} href={`/carne/razze/${breed.slug}`} className="rounded-full border border-gold/40 px-4 py-2 hover:bg-gold hover:text-ink">{breed.name}</Link>)}</div></section>}

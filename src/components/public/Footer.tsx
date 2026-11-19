@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Settings } from "@/lib/settings";
+import { getMapsDirectionsUrl } from "@/lib/maps";
 export default function Footer({ s }: { s: Settings }) {
   const c = s.contacts;
   return (
@@ -11,7 +12,7 @@ export default function Footer({ s }: { s: Settings }) {
           {c.phone && <a className="block hover:text-gold" href={`tel:${c.phone.replace(/[^\d+]/g, "")}`}>Prenotazioni: {c.phone}</a>}
           {c.whatsapp && <a className="block hover:text-gold" href={`https://wa.me/${c.whatsapp.replace(/\D/g, "")}`}>WhatsApp</a>}
           {c.email && <a className="block hover:text-gold" href={`mailto:${c.email}`}>{c.email}</a>}
-          <div className="flex gap-4 pt-2">{c.instagram && <a href={c.instagram} className="hover:text-gold">Instagram</a>}{c.facebook && <a href={c.facebook} className="hover:text-gold">Facebook</a>}{c.mapsUrl && <a href={c.mapsUrl} className="hover:text-gold">Google Maps</a>}</div>
+          <div className="flex flex-wrap gap-4 pt-2">{c.instagram && <a href={c.instagram} className="hover:text-gold">Instagram</a>}{c.facebook && <a href={c.facebook} className="hover:text-gold">Facebook</a>}<a href={getMapsDirectionsUrl(c.address, c.mapsUrl)} target="_blank" rel="noopener noreferrer" className="hover:text-gold">Come arrivare</a></div>
         </div>
       </div>
       <div className="border-t border-cream/5 py-5 text-center text-xs text-cream/50">
