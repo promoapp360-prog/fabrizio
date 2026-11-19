@@ -27,7 +27,7 @@ export default async function Razza({ params: pendingParams }: { params: Promise
           <p className="mt-6 text-lg leading-relaxed text-cream/80">{b.tasting}</p>
           <div className="mt-8 grid grid-cols-1 gap-4"><Meter label="Marezzatura" value={b.marbling} /><Meter label="Tenerezza" value={b.tenderness} /><Meter label="Intensità del gusto" value={b.flavour} /></div>
         </div>
-        <div className="space-y-4">{b.images[0] && <img src={b.images[0]} alt={b.name} className="aspect-[4/3] w-full rounded-2xl object-cover" />}
+        <div className="space-y-4">{b.images[0] && <figure><img src={b.images[0]} alt={`Immagine illustrativa del taglio ${b.name}`} className="aspect-[4/3] w-full rounded-2xl object-cover" /><figcaption className="mt-2 text-xs text-cream/50">Immagine generata a scopo illustrativo; non attesta provenienza o disponibilità delle carni.</figcaption></figure>}
           <dl className="card divide-y divide-cream/10">{facts.filter(([, v]) => v).map(([k, v]) => <div key={k} className="flex justify-between gap-4 py-2"><dt className="text-cream/60">{k}</dt><dd className="text-right">{v}</dd></div>)}</dl>
           {b.certifications && <div className="card"><p className="label">Certificazioni e tracciabilità</p><p>{b.certifications}</p>{!b.certVerified && <p className="mt-2 text-xs text-cream/50">In attesa di verifica documentale.</p>}</div>}
         </div>

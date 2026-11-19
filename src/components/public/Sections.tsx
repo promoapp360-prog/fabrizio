@@ -50,9 +50,13 @@ export async function SectionRenderer({ type, c, s }: { type: string; c: C; s: S
       return (
         <section className="bg-coal py-24"><div className="mx-auto max-w-7xl px-4">
           <Eyebrow>{c.eyebrow ?? "Selezioni"}</Eyebrow><h2 className="text-3xl md:text-5xl">{c.title ?? "Le nostre carni"}</h2>
+          <p className="mt-3 max-w-2xl text-xs leading-relaxed text-cream/50">Immagini generate a scopo illustrativo; non attestano provenienza o disponibilità delle carni.</p>
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{breeds.map(b => (
             <Link key={b.id} href={`/carne/razze/${b.slug}`} className="group card relative overflow-hidden hover:border-gold/50">
-              <div className="aspect-[4/5] -m-5 mb-4 bg-ink bg-cover bg-center transition group-hover:scale-105" style={{ backgroundImage: b.images[0] ? `url(${b.images[0]})` : "url(/brand/texture-oro.webp)" }} />
+              <div className="relative -m-5 mb-4 aspect-[4/5] overflow-hidden bg-ink">
+                <img src={b.images[0] ?? "/brand/texture-oro.webp"} alt={`Immagine illustrativa del taglio ${b.name}`} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                <span className="absolute bottom-3 left-3 rounded bg-ink/75 px-2 py-1 text-[10px] uppercase tracking-wider text-cream/75">Immagine illustrativa</span>
+              </div>
               <h3 className="mt-2 text-xl">{b.name}</h3><p className="text-sm text-cream/60">{[b.country, b.region].filter(Boolean).join(" · ")}</p>
             </Link>))}</div>
           <Link href="/carne" className="btn-ghost mt-10">Esplora il mondo della carne</Link>

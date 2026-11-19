@@ -15,7 +15,7 @@ export default function Footer({ s }: { s: Settings }) {
         </div>
       </div>
       <div className="border-t border-cream/5 py-5 text-center text-xs text-cream/50">
-        © {new Date().getFullYear()} {s.brand.name} · <Link href="/privacy" className="underline">Privacy</Link> · <Link href="/cookie" className="underline">Cookie</Link>
+        © {new Date().getFullYear()} {s.brand.name} · <Link href="/privacy" className="underline">Privacy</Link> · <Link href="/cookie" className="underline">Cookie</Link> · <Link href="/admin/login" className="underline hover:text-gold">Admin</Link>
       </div>
       {c.whatsapp && <a
         href={`https://wa.me/${c.whatsapp.replace(/\D/g, "")}`}
