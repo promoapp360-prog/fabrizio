@@ -1,15 +1,20 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useMenuRefresh } from "./useMenuRefresh";
 import type { MenuData } from "@/lib/menu";
 import { formatEUR, priceLabel, lineCents, isWeighted, type PriceMode } from "@/lib/pricing";
 
 type P = MenuData["products"][number];
 export type CartLine = { key: string; productId: string; name: string; quantity: number; cooking?: string; optionIds: string[]; optionNames: string[]; notes?: string; estCents: number; weighted: boolean };
 
-export default function MenuBrowser({ menu, cooking, cartEnabled = false, onCartChange, cart = [] }:
-  { menu: MenuData; cooking: string[]; cartEnabled?: boolean; cart?: CartLine[]; onCartChange?: (c: CartLine[]) => void }) {
+export default function MenuBrowser({ menu, cooking, cartEnabled = false, onCartChange, cart = [], liveRefresh = true }:
+  { menu: MenuData; cooking: string[]; cartEnabled?: boolean; cart?: CartLine[]; onCartChange?: (c: CartLine[]) => void; liveRefresh?: boolean }) {
   const [q, setQ] = useState(""); const [cat, setCat] = useState<string | null>(null);
-  const [noAllergen, setNoAllergen] = useState<string[]>([]); const [open, setOpen] = useState<P | null>(null);
+  const [noAllergen, setNoAllergen] = useState<string[]>([]); const [openId, setOpenId] = useState<string | null>(null);
+  const open = menu.products.find(p => p.id === openId) ?? null;
+  const setOpen = (p: P | null) => setOpenId(p?.id ?? null);
+  useMenuRefresh(liveRefresh);
+  useEffect(() => { if (cat && !menu.categories.some(c => c.id === cat)) setCat(null); }, [cat, menu.categories]);
   const allergens = useMemo(() => Array.from(new Map(menu.products.flatMap(p => p.allergens).map(a => [a.code, a.name]))), [menu]);
   const roots = menu.categories.filter(c => !c.parentId);
   const catIds = (id: string): string[] => [id, ...menu.categories.filter(c => c.parentId === id).flatMap(c => catIds(c.id))];
@@ -18,7 +23,7 @@ export default function MenuBrowser({ menu, cooking, cartEnabled = false, onCart
     (!q || `${p.name} ${p.description ?? ""} ${p.ingredients ?? ""}`.toLowerCase().includes(q.toLowerCase())) &&
     (!cat || catIds(cat).includes(p.categoryId)) &&
     !p.allergens.some(a => noAllergen.includes(a.code)));
-  const specials = filtered.filter(p => p.dailySpecial || p.offMenu);
+  const specials = filtered.filter(p => p.dailySpecial || p.offMenu || p.specialty || p.recommended);
 
   return (
     <div>
@@ -33,11 +38,15 @@ export default function MenuBrowser({ menu, cooking, cartEnabled = false, onCart
           <div className="mt-2 flex flex-wrap gap-2">{allergens.map(([code, name]) => <label key={code} className="flex items-center gap-1 rounded-full border border-cream/20 px-3 py-1"><input type="checkbox" checked={noAllergen.includes(code)} onChange={e => setNoAllergen(e.target.checked ? [...noAllergen, code] : noAllergen.filter(x => x !== code))} /> senza {name}</label>)}</div></details>}
       </div>
 
-      {!cat && !q && !!specials.length && <section className="mt-6"><h2 className="text-2xl text-gold">Del giorno e fuori menu</h2><List items={specials} onOpen={setOpen} /></section>}
+      {!cat && !q && !!specials.length && <section className="mt-6"><h2 className="text-2xl text-gold">Specialità e consigliati</h2><List items={specials} onOpen={setOpen} /></section>}
       {(cat ? menu.categories.filter(c => catIds(cat).includes(c.id)) : menu.categories).map(c => {
         const items = filtered.filter(p => p.categoryId === c.id);
         if (!items.length) return null;
-        return <section key={c.id} className="mt-8" aria-labelledby={`c-${c.id}`}><h2 id={`c-${c.id}`} className="text-2xl">{c.name}</h2><List items={items} onOpen={setOpen} /></section>;
+        return <section key={c.id} className="mt-8" aria-labelledby={`c-${c.id}`}>
+          {c.image && <img src={c.image} alt={c.name} loading="lazy" className="mb-4 h-36 w-full rounded-2xl object-cover" />}
+          <h2 id={`c-${c.id}`} className="text-2xl">{c.name}</h2>
+          {c.description && <p className="mt-2 text-sm leading-relaxed text-cream/65">{c.description}</p>}
+          <List items={items} onOpen={setOpen} /></section>;
       })}
       {!filtered.length && <p className="mt-10 text-center text-cream/60">Nessun piatto trovato.</p>}
       {open && <ProductSheet p={open} cooking={cooking} cartEnabled={cartEnabled} onClose={() => setOpen(null)}
@@ -47,16 +56,17 @@ export default function MenuBrowser({ menu, cooking, cartEnabled = false, onCart
 
 function List({ items, onOpen }: { items: P[]; onOpen: (p: P) => void }) {
   return <ul className="mt-3 divide-y divide-cream/10">{items.map(p => (
-    <li key={p.id}><button onClick={() => onOpen(p)} disabled={!p.available} className="flex w-full gap-4 py-4 text-left disabled:opacity-50">
-      {p.image && <img src={p.image} alt="" loading="lazy" className="h-20 w-20 shrink-0 rounded-xl object-cover" />}
+    <li key={p.id}><button onClick={() => onOpen(p)} className={`flex w-full gap-3 py-5 text-left sm:gap-5 ${!p.available ? "opacity-60" : ""}`}>
+      {p.image && <img src={p.image} alt={p.name} loading="lazy" className="h-24 w-24 shrink-0 rounded-xl object-cover sm:h-28 sm:w-28" />}
       <div className="min-w-0 flex-1">
-        <p className="font-display uppercase">{p.name} {p.isDemo && <span className="demo-badge">Demo</span>} {p.seasonal && <span className="demo-badge">Stagionale</span>}</p>
+        <p className="font-display uppercase">{p.name} {p.isDemo && <span className="demo-badge">Esempio</span>} {p.seasonal && <span className="demo-badge">Stagionale</span>}</p>
+        {(p.specialty || p.recommended || p.dailySpecial || p.offMenu) && <p className="mt-1 text-xs text-gold">{[p.specialty && "Specialità della casa", p.recommended && "Consigliato", p.dailySpecial && "Del giorno", p.offMenu && "Fuori menu"].filter(Boolean).join(" · ")}</p>}
         {p.description && <p className="line-clamp-2 text-sm text-cream/60">{p.description}</p>}
         {!!p.allergens.length && <p className="mt-1 text-[11px] text-cream/50">Allergeni: {p.allergens.map(a => a.name + (a.traces ? " (tracce)" : "")).join(", ")}</p>}
-        {!p.available && <p className="text-xs text-gold">Esaurito</p>}
+        {!p.available && <p className="mt-1 text-xs text-gold">Non disponibile</p>}
+        <p className="mt-2 text-sm text-gold">{p.pricePending ? "Prezzo da definire" : priceLabel(p.priceMode as PriceMode, p.priceCents)}
+          {isWeighted(p.priceMode as PriceMode) && p.estWeightGrams && <span className="ml-2 text-xs text-cream/50">≈ {p.estWeightGrams} g</span>}</p>
       </div>
-      <p className="shrink-0 text-right text-gold">{priceLabel(p.priceMode as PriceMode, p.priceCents)}
-        {isWeighted(p.priceMode as PriceMode) && p.estWeightGrams && <span className="block text-[11px] text-cream/50">≈ {p.estWeightGrams} g</span>}</p>
     </button></li>))}</ul>;
 }
 
@@ -77,16 +87,23 @@ function ProductSheet({ p, cooking, cartEnabled, onClose, onAdd }: { p: P; cooki
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 md:items-center" role="dialog" aria-modal="true" aria-labelledby="ps-title" onClick={onClose}>
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-coal p-6 md:rounded-3xl" onClick={e => e.stopPropagation()}>
         {p.image && <img src={p.image} alt="" className="-mx-6 -mt-6 mb-4 aspect-video w-[calc(100%+3rem)] max-w-none object-cover" />}
+        {p.images.length > 1 && <div className="mb-4 flex gap-2 overflow-x-auto">{p.images.slice(1).map((src, i) => <a key={`${src}-${i}`} href={src} target="_blank" rel="noreferrer"><img src={src} alt={`${p.name} · foto ${i + 2}`} className="h-24 w-32 shrink-0 rounded-lg object-cover" /></a>)}</div>}
         <div className="flex items-start justify-between gap-4"><h3 id="ps-title" className="text-2xl">{p.name}</h3><button onClick={onClose} aria-label="Chiudi" className="text-2xl">×</button></div>
-        <p className="text-gold">{priceLabel(p.priceMode as PriceMode, p.priceCents)}</p>
+        <p className="text-gold">{p.pricePending ? "Prezzo da definire dall’amministratore" : priceLabel(p.priceMode as PriceMode, p.priceCents)}</p>
+        {p.isDemo && <p className="mt-2 rounded-lg border border-gold/30 p-3 text-xs text-cream/70">Esempio dimostrativo: fotografia rappresentativa e ricetta da confermare dal ristoratore. Non costituisce un’offerta ufficiale.</p>}
+        {!p.available && <p className="mt-2 text-gold">Non disponibile · non ordinabile</p>}
         {p.description && <p className="mt-3 text-cream/80">{p.description}</p>}
         {p.ingredients && <p className="mt-2 text-sm text-cream/60"><b>Ingredienti:</b> {p.ingredients}</p>}
         {(p.breed || p.cut || p.origin) && <p className="mt-2 text-sm text-cream/60">{[p.breed?.name, p.cut?.name, p.origin].filter(Boolean).join(" · ")}</p>}
+        <dl className="mt-3 space-y-1 text-sm text-cream/70">{([
+          ["Taglio", p.cutName], ["Razza", p.breedName], ["Allevamento", p.farming], ["Frollatura", p.ageing],
+          ["Cottura", p.cookingNotes], ["Caratteristiche", p.meatCharacteristics],
+        ] as const).filter(([, value]) => !!value).map(([label, value]) => <div key={label}><dt className="inline font-semibold">{label}: </dt><dd className="inline">{value}</dd></div>)}</dl>
         <p className="mt-2 text-sm"><b>Allergeni:</b> {p.allergens.length ? p.allergens.map(a => a.name + (a.traces ? " (tracce)" : "")).join(", ") : "nessuno dichiarato"}. <span className="text-cream/50">Chiedi al personale per informazioni.</span></p>
         {p.pairing && <p className="mt-2 text-sm text-cream/60"><b>Abbinamento:</b> {p.pairing}</p>}
         {weighted && <p className="mt-3 rounded-lg border border-gold/30 p-3 text-sm">Prezzo a peso: importo <b>indicativo</b> calcolato su ≈{p.estWeightGrams} g. L&apos;importo definitivo sul peso effettivo ti sarà comunicato e confermato prima del pagamento.</p>}
 
-        {cartEnabled && <>
+        {cartEnabled && !p.pricePending && p.available && <>
           {p.hasCooking && <fieldset className="mt-5"><legend className="label">Cottura *</legend><div className="flex flex-wrap gap-2">{cooking.map(c => <button key={c} type="button" aria-pressed={cook === c} onClick={() => setCook(c)} className={`rounded-full px-3 py-1.5 text-sm ${cook === c ? "bg-gold text-ink" : "border border-cream/20"}`}>{c}</button>)}</div></fieldset>}
           {p.groups.map(g => <fieldset key={g.id} className="mt-5"><legend className="label">{g.name} {g.min > 0 && "*"} <span className="normal-case">({g.max === 1 ? "scegli 1" : `max ${g.max}`})</span></legend>
             {g.options.map(o => <label key={o.id} className="flex items-center justify-between py-1.5"><span className="flex items-center gap-2"><input type={g.max === 1 ? "radio" : "checkbox"} name={g.id} checked={sel.includes(o.id)} onChange={() => toggle(g, o.id)} /> {o.name}</span>{o.priceCents > 0 && <span className="text-sm text-cream/60">+{formatEUR(o.priceCents)}</span>}</label>)}</fieldset>)}

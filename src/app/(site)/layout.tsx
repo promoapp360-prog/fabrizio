@@ -7,7 +7,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   const s = await getSettings();
   const ld = { "@context": "https://schema.org", "@type": "Restaurant", name: s.brand.name, servesCuisine: "Carne alla brace", address: s.contacts.address, telephone: s.contacts.phone || undefined, url: process.env.PUBLIC_BASE_URL, acceptsReservations: true, menu: `${process.env.PUBLIC_BASE_URL}/menu` };
   return (<>
-    <Header logo={s.brand.logo} name={s.brand.name} orderOnline={s.ordering.takeawayEnabled || s.ordering.deliveryEnabled} />
+    <Header logo={s.brand.mark} name={s.brand.name} orderOnline={s.ordering.takeawayEnabled || s.ordering.deliveryEnabled} />
     <main id="main" className="pt-16">{children}</main>
     <Footer s={s} />
     <CookieBanner ga4={process.env.NEXT_PUBLIC_GA4_ID} />

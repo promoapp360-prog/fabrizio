@@ -4,13 +4,18 @@ import MenuBrowser, { type CartLine } from "@/components/public/MenuBrowser";
 import CartPanel from "@/components/public/CartPanel";
 import type { MenuData } from "@/lib/menu";
 import { formatEUR } from "@/lib/pricing";
+import { useLiveCart } from "@/components/public/useLiveCart";
+import { useMenuRefresh } from "@/components/public/useMenuRefresh";
 
 export default function OnlineOrder(p: { menu: MenuData; cooking: string[]; takeaway: boolean; delivery: boolean; stripe: boolean; prepMinutes: number; minDelivery: number; feeDelivery: number; zones: string }) {
+  useMenuRefresh();
   const [cart, setCart] = useState<CartLine[]>([]); const [notes, setNotes] = useState(""); const [busy, setBusy] = useState(false);
   const [channel, setChannel] = useState<"TAKEAWAY" | "DELIVERY">(p.takeaway ? "TAKEAWAY" : "DELIVERY");
   const [c, setC] = useState({ name: "", phone: "", email: "", address: "", pickupAt: "", privacy: false, payment: "ON_PICKUP" as "ON_PICKUP" | "STRIPE" });
   const [err, setErr] = useState(""); const [done, setDone] = useState<number | null>(null); const [idem, setIdem] = useState(() => crypto.randomUUID());
   const minTime = new Date(Date.now() + p.prepMinutes * 60000 - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  const channelMenu = { ...p.menu, products: p.menu.products.filter(product => product.channels.includes(channel)) };
+  const menuNotice = useLiveCart(channelMenu, cart, setCart, channel);
 
   async function submit() {
     setBusy(true); setErr("");
@@ -26,7 +31,7 @@ export default function OnlineOrder(p: { menu: MenuData; cooking: string[]; take
 
   return (
     <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 lg:grid-cols-[1fr_380px]">
-      <div><h1 className="text-5xl">Ordina online</h1><MenuBrowser menu={p.menu} cooking={p.cooking} cartEnabled cart={cart} onCartChange={setCart} /></div>
+      <div><h1 className="text-5xl">Ordina online</h1>{menuNotice && <p role="status" className="my-3 rounded-lg border border-gold/30 p-3 text-sm">{menuNotice}</p>}<MenuBrowser menu={channelMenu} cooking={p.cooking} cartEnabled cart={cart} liveRefresh={false} onCartChange={setCart} /></div>
       <aside className="lg:sticky lg:top-24 lg:self-start"><CartPanel cart={cart} setCart={setCart} notes={notes} setNotes={setNotes} busy={busy} onSubmit={submit} cta="Conferma ordine">
         <div className="mt-4 space-y-3">
           {p.takeaway && p.delivery && <div className="grid grid-cols-2 gap-2">{(["TAKEAWAY", "DELIVERY"] as const).map(x => <button key={x} type="button" aria-pressed={channel === x} onClick={() => setChannel(x)} className={`rounded-lg py-2 text-sm ${channel === x ? "bg-gold text-ink" : "border border-cream/20"}`}>{x === "TAKEAWAY" ? "Ritiro" : "Consegna"}</button>)}</div>}

@@ -3,6 +3,7 @@ import { db } from "./db";
 import { HttpError } from "./api";
 import { lineCents, isWeighted, type PriceMode } from "./pricing";
 import { getSettings } from "./settings";
+import { visibleCategoryIds } from "./category-tree";
 
 export const cartSchema = z.object({
   idempotencyKey: z.string().min(8).max(64),
@@ -31,11 +32,12 @@ export async function createOrder(cart: Cart, ctx: { channel: "TABLE" | "TAKEAWA
     include: { optionGroups: { include: { options: true } } },
   });
   const byId = new Map(products.map(p => [p.id, p]));
+  const categoryIds = new Set(visibleCategoryIds(await db.category.findMany()));
   let hasWeighted = false; let total = 0;
 
   const items = cart.items.map(i => {
     const p = byId.get(i.productId);
-    if (!p || !p.active || !p.available || !p.channels.includes(ctx.channel)) throw new HttpError(409, `"${p?.name ?? "Prodotto"}" non è disponibile`);
+    if (!p || !p.active || !p.available || p.pricePending || !categoryIds.has(p.categoryId) || !p.channels.includes(ctx.channel)) throw new HttpError(409, `"${p?.name ?? "Prodotto"}" non è disponibile per l'ordine`);
     const allOpts = p.optionGroups.flatMap(g => g.options.map(o => ({ ...o, group: g })));
     const chosen = i.optionIds.map(id => { const o = allOpts.find(x => x.id === id); if (!o || !o.available) throw new HttpError(409, "Opzione non disponibile"); return o; });
     for (const g of p.optionGroups) {

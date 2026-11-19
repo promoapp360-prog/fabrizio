@@ -204,6 +204,8 @@ model Category {
   id        String     @id @default(cuid())
   name      String
   slug      String     @unique
+  description String?
+  images    String[]
   parentId  String?
   parent    Category?  @relation("CatTree", fields: [parentId], references: [id])
   children  Category[] @relation("CatTree")
@@ -236,6 +238,8 @@ model Product {
   available     Boolean           @default(true)
   active        Boolean           @default(true)
   dailySpecial  Boolean           @default(false)
+  specialty     Boolean           @default(false)
+  recommended   Boolean           @default(false)
   offMenu       Boolean           @default(false)
   seasonal      Boolean           @default(false)
   channels      OrderChannel[]    @default([TABLE, TAKEAWAY, DELIVERY])
@@ -244,6 +248,13 @@ model Product {
   cutId         String?
   cut           Cut?              @relation(fields: [cutId], references: [id])
   origin        String?
+  cutName       String?
+  breedName     String?
+  farming       String?
+  ageing        String?
+  cookingNotes  String?
+  meatCharacteristics String?
+  pricePending  Boolean           @default(false)
   pairing       String?
   isDemo        Boolean           @default(false)
   position      Int               @default(0)

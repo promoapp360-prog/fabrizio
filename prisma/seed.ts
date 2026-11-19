@@ -62,7 +62,7 @@ async function main() {
       cuts: { create: ["costata", "filetto"].map(c => ({ cutId: C[c] })) } } });
   const B = Object.fromEntries((await db.breed.findMany()).map(b => [b.slug, b.id]));
 
-  // Categorie e piatti DEMO (prezzi fittizi)
+  // Categorie e piatti DEMO (prezzi non ufficiali, mai ordinabili finché da definire)
   const cats = [["dalla-brace", "Dalla brace"], ["antipasti", "Antipasti"], ["contorni", "Contorni"], ["dolci", "Dolci"], ["vini", "Vini"], ["bevande", "Bevande"]];
   for (const [i, [slug, name]] of cats.entries()) await db.category.upsert({ where: { slug }, update: {}, create: { slug, name, position: i } });
   const K = Object.fromEntries((await db.category.findMany()).map(c => [c.slug, c.id]));
@@ -79,7 +79,7 @@ async function main() {
   for (const p of prods) {
     const { allergens, ...data } = p as typeof p & { allergens?: string[] };
     const exists = await db.product.findUnique({ where: { slug: p.slug } }); if (exists) continue;
-    const created = await db.product.create({ data: { ...data, isDemo: true } as never });
+    const created = await db.product.create({ data: { ...data, priceCents: 0, pricePending: true, isDemo: true } as never });
     if (allergens) await db.productAllergen.createMany({ data: allergens.map(a => ({ productId: created.id, allergenId: A[a] })) });
     if (p.slug === "demo-costata" || p.slug === "demo-filetto")
       await db.optionGroup.create({ data: { productId: created.id, name: "Contorno", minSelect: 0, maxSelect: 1, options: { create: [{ name: "Patate al forno", priceCents: 400 }, { name: "Verdure grigliate", priceCents: 400 }] } } });
@@ -100,7 +100,7 @@ async function main() {
   // Pagine e sezioni CMS
   const pages: [string, string, [string, object][]][] = [
     ["home", "Homepage", [
-      ["hero", { title: "Radici di grano, anima di fuoco", subtitle: "Grano & Brace" }],
+      ["hero", { restaurantHome: true, title: "VECCIARÍ", subtitle: "MATERA", image: "/api/media/assets/hero-desktop.png", mobileImage: "/api/media/assets/hero-mobile.png" }],
       ["philosophy", { eyebrow: "La filosofia", title: "Il fuoco come linguaggio", body: "[DEMO] Testo segnaposto: racconta qui la filosofia del locale.\n\nQuesto paragrafo è modificabile da Admin › Contenuti." }],
       ["meats", { title: "Le nostre carni", eyebrow: "Selezioni" }], ["cuts", { title: "I tagli", eyebrow: "Atlante" }], ["menuPreview", { title: "Dalla brace" }],
       ["quality", { eyebrow: "Qualità e provenienza", title: "Dalla filiera al piatto", body: "[DEMO] Descrivi fornitori e provenienze reali. Non inserire certificazioni non documentate." }],

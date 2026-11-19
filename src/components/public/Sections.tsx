@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { priceLabel, type PriceMode } from "@/lib/pricing";
 import type { Settings } from "@/lib/settings";
+import { loadMenu } from "@/lib/menu";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type C = Record<string, any>;
@@ -10,12 +11,27 @@ const Eyebrow = ({ children }: { children: React.ReactNode }) => <p className="m
 export async function SectionRenderer({ type, c, s }: { type: string; c: C; s: Settings }) {
   switch (type) {
     case "hero": return (
-      <section className="relative flex min-h-[88vh] items-center justify-center overflow-hidden text-center">
+      c.restaurantHome ? <section className="restaurant-hero relative overflow-hidden bg-ink text-center" aria-label="Vecciarì – Grano & Brace, Matera">
+        <picture className="absolute inset-0">
+          <source media="(min-width: 768px)" srcSet={c.image || "/api/media/assets/hero-desktop.png"} />
+          <img src={c.mobileImage || "/api/media/assets/hero-mobile.png"} alt="Antica macelleria con banco di marmo bianco e tagli di carne sul ceppo in legno" fetchPriority="high" className="h-full w-full object-cover" />
+        </picture>
+        <div className="restaurant-hero-shade absolute inset-0" />
+        <div className="restaurant-hero-content reveal relative z-10 mx-auto flex flex-col items-center px-5">
+          <img src={s.brand.mark} alt="Simbolo originale Vecciarì: fiamma e spiga" className="hero-mark w-auto" />
+          <h1 className="hero-name mt-3 text-cream">{c.title || "VECCIARÍ"}</h1>
+          <p className="mt-2 text-xs uppercase tracking-[0.5em] text-cream md:text-sm">{c.subtitle || "MATERA"}</p>
+          <div className="mt-6 flex w-full max-w-xs flex-col justify-center gap-3 sm:max-w-none sm:flex-row md:mt-8">
+            <Link href="/prenota" className="btn-gold min-h-12">Prenota</Link>
+            <Link href="/menu" className="btn-ghost min-h-12 !border-cream/70 !bg-ink/40 !text-cream hover:!bg-ink/70">Scopri il menu</Link>
+          </div>
+        </div>
+      </section> : <section className="relative flex min-h-[70vh] items-center justify-center overflow-hidden text-center">
         {c.video ? <video className="absolute inset-0 h-full w-full object-cover opacity-40" src={c.video} autoPlay muted loop playsInline />
           : <div className="absolute inset-0 bg-cover bg-center opacity-30" style={{ backgroundImage: `url(${c.image || "/brand/texture-oro.webp"})` }} />}
         <div className="absolute inset-0 bg-gradient-to-b from-ink/30 via-ink/60 to-ink" />
         <div className="reveal relative z-10 px-4">
-          <img src={s.brand.logo} alt={s.brand.name} className="mx-auto w-64 max-w-[70vw] md:w-80" />
+          <img src={s.brand.mark} alt={s.brand.name} className="mx-auto h-24 w-auto" />
           <p className="mt-6 font-display text-sm uppercase tracking-[0.4em] text-cream/80">{c.subtitle ?? s.brand.motto}</p>
           <h1 className="mx-auto mt-4 max-w-3xl text-4xl md:text-6xl">{c.title}</h1>
           <div className="mt-10 flex flex-wrap justify-center gap-3">
@@ -51,13 +67,13 @@ export async function SectionRenderer({ type, c, s }: { type: string; c: C; s: S
         </section>);
     }
     case "menuPreview": {
-      const items = await db.product.findMany({ where: { active: true, OR: [{ dailySpecial: true }, { position: { lt: 3 } }] }, take: 6, orderBy: { position: "asc" } });
+      const items = (await loadMenu()).products.sort((a, b) => Number(b.specialty || b.recommended || b.dailySpecial) - Number(a.specialty || a.recommended || a.dailySpecial)).filter(p => p.dailySpecial || p.offMenu || p.specialty || p.recommended || p.available).slice(0, 6);
       return (
         <section className="bg-coal py-24"><div className="mx-auto max-w-5xl px-4">
           <Eyebrow>{c.eyebrow ?? "Dalla brace"}</Eyebrow><h2 className="text-3xl md:text-5xl">{c.title ?? "Assaggi dal menu"}</h2>
           <ul className="mt-10 divide-y divide-cream/10">{items.map(p => (
             <li key={p.id} className="flex items-baseline justify-between gap-4 py-4"><div><p className="font-display text-lg uppercase">{p.name} {p.isDemo && <span className="demo-badge">Demo</span>}</p><p className="text-sm text-cream/60">{p.description}</p></div>
-              <p className="shrink-0 text-gold">{priceLabel(p.priceMode as PriceMode, p.priceCents)}</p></li>))}</ul>
+              <p className="shrink-0 text-right text-sm text-gold">{p.pricePending ? "Prezzo da definire" : priceLabel(p.priceMode as PriceMode, p.priceCents)}</p></li>))}</ul>
           <Link href="/menu" className="btn-gold mt-10">Menu completo</Link>
         </div></section>);
     }

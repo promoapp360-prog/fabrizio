@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import Meter from "@/components/public/Meter";
 import { priceLabel, type PriceMode } from "@/lib/pricing";
+import { loadMenu } from "@/lib/menu";
 
 export async function generateMetadata({ params: pendingParams }: { params: Promise<{ slug: string }> }) {
   const params = await pendingParams;
@@ -14,6 +15,7 @@ export default async function Razza({ params: pendingParams }: { params: Promise
   const params = await pendingParams;
   const b = await db.breed.findUnique({ where: { slug: params.slug }, include: { farmingMethod: true, cuts: { include: { cut: true } }, products: { where: { active: true } } } });
   if (!b || !b.published) notFound();
+  const products = (await loadMenu()).products.filter(p => p.breed?.slug === b.slug);
   const facts: [string, string | null][] = [["Tipologia", b.type], ["Paese di origine", b.country], ["Provenienza", b.region], ["Allevamento", b.farmingMethod?.name ?? null], ["Alimentazione", b.feeding], ["Frollatura e maturazione", b.ageing]];
   return (
     <article className="mx-auto max-w-6xl px-4 py-16">
@@ -33,6 +35,6 @@ export default async function Razza({ params: pendingParams }: { params: Promise
       {b.body && <div className="mt-16 max-w-3xl space-y-4 text-lg leading-relaxed text-cream/80">{b.body.split("\n\n").map((p, i) => <p key={i}>{p}</p>)}</div>}
       {b.videoUrl && <video src={b.videoUrl} controls className="mt-12 w-full rounded-2xl" />}
       {!!b.cuts.length && <section className="mt-16"><h2 className="text-2xl">Tagli associati</h2><div className="mt-4 flex flex-wrap gap-3">{b.cuts.map(({ cut }) => <Link key={cut.id} href={`/carne/tagli/${cut.slug}`} className="rounded-full border border-gold/40 px-4 py-2 hover:bg-gold hover:text-ink">{cut.name}</Link>)}</div></section>}
-      {!!b.products.length && <section className="mt-12"><h2 className="text-2xl">Nel nostro menu</h2><ul className="mt-4 divide-y divide-cream/10">{b.products.map(p => <li key={p.id} className="flex justify-between py-3"><span>{p.name}</span><span className="text-gold">{priceLabel(p.priceMode as PriceMode, p.priceCents)}</span></li>)}</ul></section>}
+      {!!products.length && <section className="mt-12"><h2 className="text-2xl">Nel nostro menu</h2><ul className="mt-4 divide-y divide-cream/10">{products.map(p => <li key={p.id} className="flex justify-between gap-3 py-3"><span>{p.name}</span><span className="text-right text-gold">{p.pricePending ? "Prezzo da definire" : priceLabel(p.priceMode as PriceMode, p.priceCents)}</span></li>)}</ul></section>}
     </article>);
 }

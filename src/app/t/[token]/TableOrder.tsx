@@ -1,4 +1,6 @@
 "use client";
+import { useLiveCart } from "@/components/public/useLiveCart";
+import { useMenuRefresh } from "@/components/public/useMenuRefresh";
 import { useCallback, useEffect, useState } from "react";
 import MenuBrowser, { type CartLine } from "@/components/public/MenuBrowser";
 import CartPanel from "@/components/public/CartPanel";
@@ -9,6 +11,7 @@ const LABEL: Record<string, string> = { RECEIVED: "Ricevuto", CONFIRMED: "Confer
 type O = { id: string; number: number; status: string; estimatedCents: number; finalCents: number | null; hasWeighted: boolean; items: { nameSnapshot: string; quantity: number }[] };
 
 export default function TableOrder({ token, tableLabel, menu, cooking, orderingOn, logo }: { token: string; tableLabel: string | null; menu: MenuData; cooking: string[]; orderingOn: boolean; logo: string }) {
+  useMenuRefresh();
   const [cart, setCart] = useState<CartLine[]>([]); const [notes, setNotes] = useState(""); const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null); const [orders, setOrders] = useState<O[]>([]); const [tab, setTab] = useState<"menu" | "cart" | "status">("menu");
   // Chiave idempotenza: rigenerata solo dopo un invio riuscito → doppio tap = un solo ordine.
@@ -29,12 +32,14 @@ export default function TableOrder({ token, tableLabel, menu, cooking, orderingO
     finally { setBusy(false); }
   }
 
+  const menuNotice = useLiveCart(menu, cart, setCart, "TABLE");
   return (
     <div className="mx-auto min-h-screen max-w-3xl px-4 pb-28">
       <header className="flex items-center justify-between py-4"><img src={logo} alt="Vecciarì" className="h-12" />{tableLabel && <span className="rounded-full bg-gold px-4 py-1 font-display uppercase text-ink">{tableLabel}</span>}</header>
       {!orderingOn && <p className="rounded-xl border border-gold/30 p-3 text-sm">Al momento gli ordini dal tavolo non sono attivi: puoi consultare il menu e ordinare con il personale.</p>}
+      {menuNotice && <p role="status" className="my-3 rounded-lg border border-gold/30 p-3 text-sm">{menuNotice}</p>}
       {msg && <p role="status" className={`my-3 rounded-xl p-3 ${msg.ok ? "bg-gold text-ink" : "bg-red-900/60"}`}>{msg.text}</p>}
-      {tab === "menu" && <MenuBrowser menu={menu} cooking={cooking} cartEnabled={orderingOn} cart={cart} onCartChange={c => { setCart(c); setMsg(null); }} />}
+      {tab === "menu" && <MenuBrowser menu={menu} cooking={cooking} cartEnabled={orderingOn} cart={cart} liveRefresh={false} onCartChange={c => { setCart(c); setMsg(null); }} />}
       {tab === "cart" && <div className="mt-4"><CartPanel cart={cart} setCart={setCart} notes={notes} setNotes={setNotes} onSubmit={submit} busy={busy} /></div>}
       {tab === "status" && <div className="mt-4 space-y-3">{!orders.length && <p className="text-cream/60">Nessun ordine ancora inviato da questo tavolo.</p>}
         {orders.map(o => <div key={o.id} className="card"><div className="flex justify-between"><b className="font-display uppercase">Ordine n° {o.number}</b><span className="text-gold">{LABEL[o.status]}</span></div>

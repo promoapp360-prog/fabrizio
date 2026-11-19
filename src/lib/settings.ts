@@ -1,7 +1,7 @@
 import { db } from "./db";
 // Impostazioni con valori di default: l'admin le sovrascrive da /admin/impostazioni.
 export const DEFAULTS = {
-  brand: { name: "Vecciarì", tagline: "Grano & Brace", motto: "Radici di grano – Anima di fuoco", logo: "/brand/logo-naming-oro.webp", mark: "/brand/fiamma-oro.webp", favicon: "/icon-192.png",
+  brand: { name: "Vecciarì", tagline: "Grano & Brace", motto: "Matera", logo: "/brand/logo-naming-oro.webp", mark: "/brand/fiamma-oro.webp", favicon: "/icon-192.png",
     colors: { ink: "10 10 8", coal: "22 20 16", gold: "233 194 58", goldDeep: "201 150 30", cream: "250 246 236" } },
   contacts: { address: "[DEMO] Indirizzo da inserire", phone: "", whatsapp: "", email: "", mapsUrl: "", instagram: "", facebook: "",
     hours: "[DEMO] Orari da inserire" },
@@ -9,7 +9,7 @@ export const DEFAULTS = {
     prepMinutes: 30, deliveryMinCents: 3000, deliveryFeeCents: 300, deliveryZones: "" },
   reservations: { autoConfirm: false, durationMin: 120, maxPartyOnline: 10, minNoticeMin: 60 },
   security: { minPasswordLength: 4 },
-  seo: { title: "Vecciarì — Grano & Brace", description: "Ristorante di carni selezionate alla brace." },
+  seo: { title: "Vecciarì — Grano & Brace, Matera", description: "Vecciarì – Grano & Brace a Matera. Scopri il menu, il mondo della carne e prenota il tuo tavolo." },
   cooking: ["Al sangue", "Media-al sangue", "Media", "Media-ben cotta", "Ben cotta"],
 };
 export type Settings = typeof DEFAULTS;
@@ -24,7 +24,7 @@ export async function getSettings(): Promise<Settings> {
 export function integrationStatus() {
   const has = (...k: string[]) => k.every(x => !!process.env[x]);
   return [
-    { key: "storage", name: "Storage immagini (S3)", ok: has("S3_BUCKET", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"), env: "S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_PUBLIC_URL", help: "Crea un bucket (es. Cloudflare R2) e inserisci le chiavi nei Secrets." },
+    { key: "storage", name: "Archivio immagini", ok: has("PRIVATE_OBJECT_DIR"), env: "Configurazione gestita da Replit App Storage", help: "Carica le foto direttamente da Gestione Menu oppure Contenuti sito › Media." },
     { key: "email", name: "Email transazionali (SMTP)", ok: has("SMTP_HOST", "SMTP_USER", "SMTP_PASSWORD", "MAIL_FROM"), env: "SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, MAIL_FROM", help: "Usa un provider SMTP (Brevo, Postmark, Gmail Workspace)." },
     { key: "stripe", name: "Pagamenti online Stripe", ok: has("STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"), env: "STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET", help: "Dashboard Stripe → Sviluppatori → Chiavi API e Webhook su /api/stripe/webhook." },
     { key: "whatsapp", name: "WhatsApp Business (Cloud API ufficiale)", ok: has("WHATSAPP_CLOUD_TOKEN", "WHATSAPP_PHONE_NUMBER_ID"), env: "WHATSAPP_CLOUD_TOKEN, WHATSAPP_PHONE_NUMBER_ID", help: "Meta Business → WhatsApp → API Setup. Servono template approvati e consenso del cliente." },

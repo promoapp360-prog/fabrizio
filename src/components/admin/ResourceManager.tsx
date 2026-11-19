@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import ImageField from "./ImageField";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export type Field = {
@@ -27,7 +28,8 @@ export function FieldInput({ f, v, set }: { f: Field; v: any; set: (v: any) => v
     case "select": return <select className="input" value={v ?? ""} onChange={e => set(e.target.value || null)}><option value="">—</option>{f.options?.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select>;
     case "multiselect": return <div className="flex flex-wrap gap-2">{f.options?.map(o => { const on = (v ?? []).includes(o.value); return <button type="button" key={o.value} onClick={() => set(on ? v.filter((x: string) => x !== o.value) : [...(v ?? []), o.value])} className={`rounded-full px-3 py-1 text-xs ${on ? "bg-gold text-ink" : "border border-cream/20"}`}>{o.label}</button>; })}</div>;
     case "weekdays": return <div className="flex gap-1">{WD.map((d, i) => { const on = (v ?? []).includes(i); return <button type="button" key={i} onClick={() => set(on ? v.filter((x: number) => x !== i) : [...(v ?? []), i].sort())} className={`rounded px-2 py-1 text-xs ${on ? "bg-gold text-ink" : "border border-cream/20"}`}>{d}</button>; })}</div>;
-    case "tags": case "images": return <textarea className="input font-mono text-xs" rows={2} placeholder="Un valore per riga" value={(v ?? []).join("\n")} onChange={e => set(e.target.value.split("\n").map(s => s.trim()).filter(Boolean))} />;
+    case "images": return <ImageField value={v ?? []} onChange={set} />;
+    case "tags": return <textarea className="input font-mono text-xs" rows={2} placeholder="Un valore per riga" defaultValue={(v ?? []).join("\n")} onBlur={e => set(e.target.value.split("\n").map(s => s.trim()).filter(Boolean))} />;
     case "date": return <input className="input" type="date" value={v ? String(v).slice(0, 10) : ""} onChange={e => set(e.target.value)} />;
     case "datetime": return <input className="input" type="datetime-local" value={v ? new Date(v).toISOString().slice(0, 16) : ""} onChange={e => set(new Date(e.target.value).toISOString())} />;
     case "json": return <textarea className="input font-mono text-xs" rows={8} defaultValue={JSON.stringify(v ?? {}, null, 2)} onBlur={e => { try { set(JSON.parse(e.target.value)); } catch { alert("JSON non valido"); } }} />;
@@ -45,7 +47,12 @@ export default function ResourceManager({ resource, title, fields, columns, defa
   const pick = (row: any) => { const d = toForm ? toForm(row) : row; return Object.fromEntries(fields.map(f => [f.name, d[f.name]])); };
   async function save(e: React.FormEvent) {
     e.preventDefault(); setErr("");
-    try { await api(edit!.id ? `${base}/${edit!.id}` : base, edit!.id ? "PATCH" : "POST", edit!.data); setEdit(null); load(); } catch (e: any) { setErr(e.message); }
+    if (e.currentTarget.querySelector('[data-uploading="true"]')) { setErr("Attendi la fine del caricamento delle foto prima di salvare."); return; }
+    const data = { ...edit!.data };
+    if ("slug" in data || fields.some(f => f.name === "slug")) {
+      if (!data.slug && data.name) data.slug = `${String(data.name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}-${Date.now().toString(36)}`;
+    }
+    try { await api(edit!.id ? `${base}/${edit!.id}` : base, edit!.id ? "PATCH" : "POST", data); setEdit(null); load(); } catch (e: any) { setErr(e.message); }
   }
   async function del(id: string) { if (!confirm("Eliminare definitivamente?")) return; try { const r = await api(`${base}/${id}`, "DELETE"); if (r?.deactivated) alert("Il prodotto ha ordini nello storico: è stato disattivato invece che eliminato."); load(); } catch (e: any) { setErr(e.message); } }
   async function dup(row: any) { const d = pick(row); d.name = `${d.name} (copia)`; if ("slug" in d) d.slug = `${d.slug}-copia-${Date.now().toString(36)}`; try { await api(base, "POST", d); load(); } catch (e: any) { setErr(e.message); } }
@@ -54,7 +61,7 @@ export default function ResourceManager({ resource, title, fields, columns, defa
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-3xl">{title}</h1>
-        <div className="flex gap-2"><input className="input !w-56" placeholder="Cerca…" value={q} onChange={e => setQ(e.target.value)} /><button className="btn-gold !py-2" onClick={() => setEdit({ data: { ...defaults } })}>+ Nuovo</button></div></div>
+        <div className="flex w-full gap-2 sm:w-auto"><input className="input min-w-0 sm:!w-56" placeholder="Cerca…" value={q} onChange={e => setQ(e.target.value)} /><button className="btn-gold shrink-0 !py-2" onClick={() => { setErr(""); setEdit({ data: { ...defaults } }); }}>+ Nuovo</button></div></div>
       {err && <p role="alert" className="mt-4 rounded bg-red-900/50 p-3 text-sm">{err}</p>}
       {!shown ? <p className="mt-6 text-cream/50">Caricamento…</p> : (
         <div className="mt-6 overflow-x-auto rounded-xl border border-cream/10"><table className="w-full text-sm">
@@ -71,11 +78,12 @@ export default function ResourceManager({ resource, title, fields, columns, defa
           <form onSubmit={save} onClick={e => e.stopPropagation()} className="h-full w-full max-w-2xl overflow-y-auto bg-coal p-6">
             <div className="flex items-center justify-between"><h2 className="text-2xl">{edit.id ? "Modifica" : "Nuovo"}</h2><button type="button" onClick={() => setEdit(null)} className="text-2xl" aria-label="Chiudi">×</button></div>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">{fields.map(f => (
-              <label key={f.name} className={f.full || ["textarea", "json", "multiselect", "images", "tags"].includes(f.type ?? "") ? "sm:col-span-2" : ""}>
-                <span className="label">{f.label}{f.required && " *"}</span>
-                <FieldInput f={f} v={edit.data[f.name]} set={v => setEdit({ ...edit, data: { ...edit.data, [f.name]: v } })} />
+              <div key={f.name} className={f.full || ["textarea", "json", "multiselect", "images", "tags"].includes(f.type ?? "") ? "sm:col-span-2" : ""}>
+                <label className="block"><span className="label">{f.label}{f.required && " *"}</span>
+                {f.type !== "images" && <FieldInput f={f} v={edit.data[f.name]} set={v => setEdit(current => current && ({ ...current, data: { ...current.data, [f.name]: v } }))} />}</label>
+                {f.type === "images" && <ImageField value={edit.data[f.name] ?? []} onChange={v => setEdit(current => current && ({ ...current, data: { ...current.data, [f.name]: v } }))} />}
                 {f.help && <span className="mt-1 block text-xs text-cream/50">{f.help}</span>}
-              </label>))}</div>
+              </div>))}</div>
             {err && <p role="alert" className="mt-4 rounded bg-red-900/50 p-3 text-sm">{err}</p>}
             <div className="mt-6 flex gap-3"><button className="btn-gold">Salva</button><button type="button" className="btn-ghost" onClick={() => setEdit(null)}>Annulla</button></div>
           </form>

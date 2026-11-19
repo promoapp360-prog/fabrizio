@@ -12,13 +12,14 @@ const channel = z.enum(["TABLE", "TAKEAWAY", "DELIVERY"]);
  * ordinamento e include. Aggiungere una risorsa = aggiungere una voce qui.
  */
 export const RESOURCES = {
-  categories: { model: "category", perm: "menu", orderBy: { position: "asc" }, schema: z.object({ name: str.min(1), slug: str.min(1), parentId: str.nullable().optional(), position: z.number().int().default(0), active: z.boolean().default(true) }) },
+  categories: { model: "category", perm: "menu", orderBy: { position: "asc" }, schema: z.object({ name: str.min(1), slug: str.min(1), description: opt, images: imgs, parentId: str.nullable().optional(), position: z.number().int().default(0), active: z.boolean().default(true) }) },
   products: { model: "product", perm: "menu", orderBy: [{ categoryId: "asc" }, { position: "asc" }], include: { category: true, allergens: true, optionGroups: { include: { options: true } } },
     schema: z.object({ name: str.min(1), slug: str.min(1), description: opt, ingredients: opt, categoryId: str, priceMode, priceCents: z.number().int().min(0),
       takeawayPriceCents: z.number().int().min(0).nullable().optional(), estWeightGrams: z.number().int().min(0).nullable().optional(), hasCooking: z.boolean().default(false),
       images: imgs, available: z.boolean().default(true), active: z.boolean().default(true), dailySpecial: z.boolean().default(false), offMenu: z.boolean().default(false),
-      seasonal: z.boolean().default(false), channels: z.array(channel).default(["TABLE", "TAKEAWAY", "DELIVERY"]), breedId: str.nullable().optional(), cutId: str.nullable().optional(),
-      origin: opt, pairing: opt, isDemo: z.boolean().default(false), position: z.number().int().default(0),
+      seasonal: z.boolean().default(false), specialty: z.boolean().default(false), recommended: z.boolean().default(false), channels: z.array(channel).default(["TABLE", "TAKEAWAY", "DELIVERY"]), breedId: str.nullable().optional(), cutId: str.nullable().optional(),
+      origin: opt, cutName: opt, breedName: opt, farming: opt, ageing: opt, cookingNotes: opt, meatCharacteristics: opt,
+      pricePending: z.boolean().default(false), pairing: opt, isDemo: z.boolean().default(false), position: z.number().int().default(0),
       allergenIds: z.array(str).optional(), traceIds: z.array(str).optional(),
       optionGroups: z.array(z.object({ name: str.min(1), minSelect: z.number().int().min(0), maxSelect: z.number().int().min(1), options: z.array(z.object({ name: str.min(1), priceCents: z.number().int().min(0), available: z.boolean().default(true) })) })).optional() }) },
   allergens: { model: "allergen", perm: "menu", orderBy: { name: "asc" }, schema: z.object({ code: str.min(1), name: str.min(1) }) },

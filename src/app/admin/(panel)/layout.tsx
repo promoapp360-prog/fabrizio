@@ -6,7 +6,7 @@ import Nav from "@/components/admin/Nav";
 export const metadata = { title: "Gestionale", robots: { index: false } };
 const ITEMS: [string, string, Permission][] = [
   ["/admin", "Dashboard", "dashboard"], ["/admin/ordini", "Ordini", "orders.manage"], ["/admin/cucina", "Cucina", "kitchen"],
-  ["/admin/prenotazioni", "Prenotazioni", "reservations"], ["/admin/tavoli", "Sala & QR", "tables"], ["/admin/menu", "Menu", "menu"],
+  ["/admin/prenotazioni", "Prenotazioni", "reservations"], ["/admin/tavoli", "Sala & QR", "tables"], ["/admin/menu", "Gestione Menu", "menu"],
   ["/admin/carne", "Mondo carne", "meat"], ["/admin/contenuti", "Contenuti sito", "content"], ["/admin/promozioni", "Promozioni", "promotions"],
   ["/admin/clienti", "Clienti", "customers"], ["/admin/magazzino", "Magazzino", "stock"], ["/admin/statistiche", "Statistiche", "stats"],
   ["/admin/impostazioni", "Impostazioni", "settings"], ["/admin/utenti", "Personale", "users"], ["/admin/log", "Registro attività", "audit"],

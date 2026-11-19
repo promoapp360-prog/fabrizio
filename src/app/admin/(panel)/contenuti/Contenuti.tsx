@@ -1,9 +1,10 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/components/admin/ResourceManager";
+import { uploadMedia } from "@/lib/upload-client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const TYPES: Record<string, { label: string; fields: [string, string, ("text" | "textarea" | "reviews")?][] }> = {
-  hero: { label: "Hero iniziale", fields: [["title", "Titolo"], ["subtitle", "Sottotitolo"], ["image", "Immagine sfondo (URL)"], ["video", "Video sfondo (URL, opzionale)"]] },
+  hero: { label: "Hero iniziale", fields: [["title", "Titolo"], ["subtitle", "Località"], ["image", "Immagine desktop (URL)"], ["mobileImage", "Immagine smartphone (URL)"], ["video", "Video sfondo (URL, opzionale)"]] },
   philosophy: { label: "Filosofia", fields: [["eyebrow", "Occhiello"], ["title", "Titolo"], ["body", "Testo (paragrafi separati da riga vuota)", "textarea"]] },
   quality: { label: "Qualità e provenienza", fields: [["eyebrow", "Occhiello"], ["title", "Titolo"], ["body", "Testo", "textarea"]] },
   richtext: { label: "Testo libero", fields: [["eyebrow", "Occhiello"], ["title", "Titolo"], ["body", "Testo", "textarea"]] },
@@ -28,8 +29,9 @@ export default function Contenuti({ storage }: { storage: boolean }) {
   const swap = async (i: number, j: number) => { const a = sections[i], b = sections[j]; if (!b) return; await patch(a.id, { position: b.position }); await patch(b.id, { position: a.position }); };
   const add = async (type: string) => { await api("/api/admin/r/sections", "POST", { pageId: page.id, type, position: (sections.at(-1)?.position ?? 0) + 1, enabled: false, content: {} }); load(); };
   async function upload(files: FileList | null, gallery: string) {
-    if (!files?.length) return; const fd = new FormData(); [...files].forEach(f => fd.append("files", f)); fd.append("gallery", gallery);
-    const r = await fetch("/api/admin/upload", { method: "POST", body: fd }); const j = await r.json(); setMsg(r.ok ? `${j.length} file caricati` : j.error); load();
+    if (!files?.length) return;
+    try { for (const file of Array.from(files)) await uploadMedia(file, gallery); setMsg(`${files.length} file caricati`); await load(); }
+    catch (e) { setMsg(e instanceof Error ? e.message : "Caricamento non riuscito"); }
   }
   const previewPath = slug === "home" ? "/" : `/${slug}`;
 
@@ -52,11 +54,11 @@ export default function Contenuti({ storage }: { storage: boolean }) {
     <div className="mt-3 flex items-center gap-2"><select id="newsec" className="input !w-60">{Object.entries(TYPES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select><button className="btn-ghost !py-2 text-sm" onClick={() => add((document.getElementById("newsec") as HTMLSelectElement).value)}>+ Aggiungi sezione</button></div>
 
     <h2 className="mt-12 text-xl">Media e gallerie</h2>
-    {!storage ? <p className="mt-2 rounded border border-gold/30 p-3 text-sm">Storage immagini non configurato: le immagini non possono essere caricate finché non imposti le variabili S3 (Impostazioni › Integrazioni). Puoi comunque incollare URL di immagini già online.</p>
+    {!storage ? <p className="mt-2 rounded border border-gold/30 p-3 text-sm">Archivio immagini non configurato. Puoi comunque incollare URL di immagini già online.</p>
       : <div className="mt-3 flex items-center gap-2"><input id="gal" className="input !w-48" defaultValue="home" aria-label="Galleria" /><input type="file" multiple accept="image/*,video/mp4" onChange={e => upload(e.target.files, (document.getElementById("gal") as HTMLInputElement).value)} /></div>}
     {msg && <p className="mt-2 text-sm text-gold">{msg}</p>}
     <div className="mt-4 grid grid-cols-3 gap-3 md:grid-cols-6">{media.map(m => <figure key={m.id} className="text-xs"><img src={m.url} alt={m.alt} className="aspect-square w-full rounded object-cover" />
-      <figcaption className="mt-1 truncate">{m.gallery} · <button className="underline" onClick={() => navigator.clipboard.writeText(m.url)}>copia URL</button> · <button className="text-red-400 underline" onClick={async () => { await api(`/api/admin/r/media/${m.id}`, "DELETE"); load(); }}>×</button></figcaption>
+      <figcaption className="mt-1 truncate">{m.gallery} · <button className="underline" onClick={() => navigator.clipboard.writeText(m.url)}>copia URL</button> · <button aria-label="Elimina dalla libreria" className="text-red-400 underline" onClick={async () => { if (!confirm("Eliminare questa foto dalla libreria?")) return; try { await api(`/api/admin/r/media/${m.id}`, "DELETE"); load(); } catch (e) { setMsg(e instanceof Error ? e.message : "Eliminazione non riuscita"); } }}>×</button></figcaption>
       <input className="input mt-1 !py-1 text-xs" placeholder="Testo alternativo" defaultValue={m.alt} onBlur={e => api(`/api/admin/r/media/${m.id}`, "PATCH", { alt: e.target.value })} /></figure>)}</div>
 
     {edit && <div className="fixed inset-0 z-50 flex justify-end bg-black/60" onClick={() => setEdit(null)}><div className="h-full w-full max-w-xl overflow-y-auto bg-coal p-6" onClick={e => e.stopPropagation()}>

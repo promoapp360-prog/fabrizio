@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import ResourceManager, { api } from "@/components/admin/ResourceManager";
-import { ZONES } from "@/components/public/CowMap";
+import { ZONES } from "@/lib/meat-zones";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export default function MeatAdmin() {
   const [tab, setTab] = useState<"breeds" | "cuts" | "farming">("breeds");
