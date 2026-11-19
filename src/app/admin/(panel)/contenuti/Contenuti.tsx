@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/components/admin/ResourceManager";
 /* eslint-disable @typescript-eslint/no-explicit-any */
-const TYPES: Record<string, { label: string; fields: [string, string, "text" | "textarea" | "reviews"?][] }> = {
+const TYPES: Record<string, { label: string; fields: [string, string, ("text" | "textarea" | "reviews")?][] }> = {
   hero: { label: "Hero iniziale", fields: [["title", "Titolo"], ["subtitle", "Sottotitolo"], ["image", "Immagine sfondo (URL)"], ["video", "Video sfondo (URL, opzionale)"]] },
   philosophy: { label: "Filosofia", fields: [["eyebrow", "Occhiello"], ["title", "Titolo"], ["body", "Testo (paragrafi separati da riga vuota)", "textarea"]] },
   quality: { label: "Qualità e provenienza", fields: [["eyebrow", "Occhiello"], ["title", "Titolo"], ["body", "Testo", "textarea"]] },
