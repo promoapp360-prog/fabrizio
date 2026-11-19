@@ -1,17 +1,69 @@
 // Vecciarì — Grano & Brace · schema database (PostgreSQL)
 // Importi in centesimi (Int) per evitare errori di arrotondamento.
-generator client { provider = "prisma-client-js" }
-datasource db { provider = "postgresql"; url = env("DATABASE_URL") }
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
 
-enum Role { SUPER_ADMIN MANAGER WAITER KITCHEN }
-enum PriceMode { FIXED PER_KG PER_HG PER_PORTION }
-enum OrderChannel { TABLE TAKEAWAY DELIVERY }
-enum OrderStatus { RECEIVED CONFIRMED PREPARING READY SERVED CANCELLED }
-enum PaymentMethod { AT_TABLE AT_COUNTER STRIPE ON_PICKUP }
-enum PaymentStatus { PENDING PAID REFUNDED FAILED }
-enum ReservationStatus { PENDING CONFIRMED CANCELLED SEATED NO_SHOW COMPLETED WAITLIST }
-enum ContentStatus { DRAFT PUBLISHED }
-enum StockMoveType { LOAD SALE ADJUSTMENT WASTE }
+enum Role {
+  SUPER_ADMIN
+  MANAGER
+  WAITER
+  KITCHEN
+}
+enum PriceMode {
+  FIXED
+  PER_KG
+  PER_HG
+  PER_PORTION
+}
+enum OrderChannel {
+  TABLE
+  TAKEAWAY
+  DELIVERY
+}
+enum OrderStatus {
+  RECEIVED
+  CONFIRMED
+  PREPARING
+  READY
+  SERVED
+  CANCELLED
+}
+enum PaymentMethod {
+  AT_TABLE
+  AT_COUNTER
+  STRIPE
+  ON_PICKUP
+}
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+  FAILED
+}
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  SEATED
+  NO_SHOW
+  COMPLETED
+  WAITLIST
+}
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+}
+enum StockMoveType {
+  LOAD
+  SALE
+  ADJUSTMENT
+  WASTE
+}
 
 // ── Utenti e audit ──────────────────────────────────────
 model User {
