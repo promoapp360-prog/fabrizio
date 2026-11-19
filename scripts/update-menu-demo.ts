@@ -3,25 +3,18 @@
  * Not a deploy/start hook. Photos live in this project's Replit App Storage.
  */
 import { PrismaClient, Prisma } from "@prisma/client";
+import { PRODUCT_COPY, withoutDemoLabel } from "../src/lib/restaurant-content";
 const db = new PrismaClient();
 const photo = (name: string) => `/api/media/assets/menu-${name}.jpg`;
-const examples: Record<string, { description: string; ingredients: string; image: string }> = {
-  "demo-costata": { description: "Costata con osso, rosolata sulla brace e servita al taglio. Un esempio dedicato agli amanti del gusto pieno della carne.", ingredients: "Carne bovina, olio extravergine di oliva, sale, rosmarino. Ricetta dimostrativa da confermare.", image: "brace" },
-  "demo-filetto": { description: "Filetto alla brace dal carattere delicato, accompagnato da erbe aromatiche. Preparazione dimostrativa da personalizzare.", ingredients: "Filetto bovino, olio extravergine di oliva, sale, erbe aromatiche. Ricetta dimostrativa da confermare.", image: "brace" },
-  "demo-picanha": { description: "Picanha alla brace, affettata al momento per valorizzare consistenza e sapore. Esempio di presentazione, non offerta ufficiale.", ingredients: "Carne bovina, sale. Ricetta dimostrativa da confermare.", image: "brace" },
-  "demo-tagliere": { description: "Una selezione dimostrativa di salumi e formaggi, pensata per aprire la cena con sapori da condividere.", ingredients: "Salumi e formaggi assortiti. Composizione e allergeni da verificare con il ristoratore.", image: "antipasti" },
-  "demo-patate": { description: "Spicchi di patate dorati al forno, profumati al rosmarino: un contorno semplice da abbinare alla brace.", ingredients: "Patate, olio extravergine di oliva, rosmarino, sale. Ricetta dimostrativa da confermare.", image: "contorni" },
-  "demo-tiramisu": { description: "Crema al mascarpone, savoiardi al caffè e una spolverata di cacao. Un classico finale di cena, qui proposto come esempio.", ingredients: "Mascarpone, uova, savoiardi, caffè, zucchero, cacao. Ricetta dimostrativa da confermare.", image: "dolci" },
-  "demo-rosso": { description: "Calice di vino rosso come esempio della selezione vini. Etichetta, annata e disponibilità saranno indicate dal ristoratore.", ingredients: "Vino rosso; contiene solfiti. Etichetta da definire.", image: "vini" },
-  "demo-acqua": { description: "Acqua minerale naturale o frizzante: esempio di bevanda. Marca e formato saranno confermati dal ristoratore.", ingredients: "Acqua minerale. Marca e formato da definire.", image: "bevande" },
-};
+const photoNames: Record<string, string> = { "demo-tagliere": "antipasti", "demo-patate": "contorni", "demo-tiramisu": "dolci", "demo-rosso": "vini", "demo-acqua": "bevande" };
+const examples = Object.fromEntries(Object.entries(PRODUCT_COPY).map(([slug, copy]) => [slug, { ...copy, image: photoNames[slug] ?? "brace" }]));
 async function main() {
   let updated = 0, created = 0;
   for (const [slug, example] of Object.entries(examples)) {
     const product = await db.product.findUnique({ where: { slug } });
     if (!product?.isDemo) continue;
     await db.product.update({ where: { id: product.id }, data: {
-      description: example.description, ingredients: example.ingredients, images: [photo(example.image)],
+      name: withoutDemoLabel(product.name), description: example.description, ingredients: example.ingredients, images: [photo(example.image)],
       pricePending: true, breedId: null, origin: null,
     } });
     updated++;
@@ -32,8 +25,8 @@ async function main() {
     const product = await db.product.findUnique({ where: { slug: `esempio-${category.slug}` } });
     if (product) continue;
     await db.product.create({ data: {
-      name: `[DEMO] Esempio ${category.name}`, slug: `esempio-${category.slug}`, categoryId: category.id,
-      description: `Prodotto dimostrativo della categoria ${category.name}. Il ristoratore definirà ricetta, ingredienti e allergeni prima della vendita.`,
+      name: category.name, slug: `esempio-${category.slug}`, categoryId: category.id,
+      description: `Per informazioni sulle proposte della categoria ${category.name}, chiedi al personale.`,
       ingredients: "Da definire dal ristoratore", images: [photo("brace")], priceCents: 0, pricePending: true, isDemo: true,
     } });
     created++;

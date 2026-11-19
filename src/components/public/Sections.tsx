@@ -53,7 +53,6 @@ export async function SectionRenderer({ type, c, s }: { type: string; c: C; s: S
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{breeds.map(b => (
             <Link key={b.id} href={`/carne/razze/${b.slug}`} className="group card relative overflow-hidden hover:border-gold/50">
               <div className="aspect-[4/5] -m-5 mb-4 bg-ink bg-cover bg-center transition group-hover:scale-105" style={{ backgroundImage: b.images[0] ? `url(${b.images[0]})` : "url(/brand/texture-oro.webp)" }} />
-              {b.isDemo && <span className="demo-badge">Demo</span>}
               <h3 className="mt-2 text-xl">{b.name}</h3><p className="text-sm text-cream/60">{[b.country, b.region].filter(Boolean).join(" · ")}</p>
             </Link>))}</div>
           <Link href="/carne" className="btn-ghost mt-10">Esplora il mondo della carne</Link>
@@ -72,7 +71,7 @@ export async function SectionRenderer({ type, c, s }: { type: string; c: C; s: S
         <section className="bg-coal py-24"><div className="mx-auto max-w-5xl px-4">
           <Eyebrow>{c.eyebrow ?? "Dalla brace"}</Eyebrow><h2 className="text-3xl md:text-5xl">{c.title ?? "Assaggi dal menu"}</h2>
           <ul className="mt-10 divide-y divide-cream/10">{items.map(p => (
-            <li key={p.id} className="flex items-baseline justify-between gap-4 py-4"><div><p className="font-display text-lg uppercase">{p.name} {p.isDemo && <span className="demo-badge">Demo</span>}</p><p className="text-sm text-cream/60">{p.description}</p></div>
+            <li key={p.id} className="flex items-baseline justify-between gap-4 py-4"><div><p className="font-display text-lg uppercase">{p.name}</p><p className="text-sm text-cream/60">{p.description}</p></div>
               <p className="shrink-0 text-right text-sm text-gold">{p.pricePending ? "Prezzo da definire" : priceLabel(p.priceMode as PriceMode, p.priceCents)}</p></li>))}</ul>
           <Link href="/menu" className="btn-gold mt-10">Menu completo</Link>
         </div></section>);
@@ -93,7 +92,7 @@ export async function SectionRenderer({ type, c, s }: { type: string; c: C; s: S
         <div><Eyebrow>Vieni a trovarci</Eyebrow><h2 className="text-3xl md:text-5xl">{c.title ?? "Orari e contatti"}</h2>
           <p className="mt-6 text-cream/80">{s.contacts.address}</p><p className="mt-2 whitespace-pre-line text-cream/80">{s.contacts.hours}</p>
           <div className="mt-8 flex flex-wrap gap-3">
-            {s.contacts.phone && <a className="btn-ghost" href={`tel:${s.contacts.phone}`}>Chiama</a>}
+            {s.contacts.phone && <a className="btn-ghost" href={`tel:${s.contacts.phone.replace(/[^\d+]/g, "")}`}>Chiama per prenotare</a>}
             {s.contacts.whatsapp && <a className="btn-ghost" href={`https://wa.me/${s.contacts.whatsapp.replace(/\D/g, "")}`}>WhatsApp</a>}
             {s.contacts.mapsUrl && <a className="btn-ghost" href={s.contacts.mapsUrl}>Indicazioni</a>}
           </div></div>

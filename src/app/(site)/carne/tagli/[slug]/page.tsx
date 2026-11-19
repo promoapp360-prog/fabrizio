@@ -21,7 +21,6 @@ export default async function Taglio({ params: pendingParams }: { params: Promis
   return (
     <article className="mx-auto max-w-5xl px-4 py-16">
       <Link href="/carne#atlante" className="text-sm text-gold">← Atlante dei tagli</Link>
-      {c.isDemo && <p className="mt-6"><span className="demo-badge">Contenuto dimostrativo</span></p>}
       <h1 className="mt-2 text-5xl md:text-7xl">{c.name}</h1>
       <div className="mt-10 grid gap-10 md:grid-cols-2">
         <div><p className="text-lg leading-relaxed text-cream/80">{c.description}</p>

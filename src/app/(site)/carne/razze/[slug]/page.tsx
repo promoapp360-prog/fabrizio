@@ -21,7 +21,7 @@ export default async function Razza({ params: pendingParams }: { params: Promise
     <article className="mx-auto max-w-6xl px-4 py-16">
       <Link href="/carne#razze" className="text-sm text-gold">← Tutte le razze</Link>
       <div className="mt-6 grid gap-12 md:grid-cols-2">
-        <div>{b.isDemo && <span className="demo-badge">Contenuto dimostrativo</span>}
+        <div>
           <h1 className="mt-2 text-5xl md:text-6xl">{b.name}</h1>
           <p className={`mt-4 text-sm uppercase tracking-widest ${b.available ? "text-gold" : "text-cream/50"}`}>{b.available ? "Disponibile da noi" : "Disponibilità da verificare con il ristorante"}</p>
           <p className="mt-6 text-lg leading-relaxed text-cream/80">{b.tasting}</p>

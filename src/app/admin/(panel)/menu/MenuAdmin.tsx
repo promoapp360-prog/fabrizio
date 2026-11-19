@@ -34,11 +34,11 @@ export default function MenuAdmin() {
         { name: "channels", label: "Canali", type: "multiselect", options: [{ value: "TABLE", label: "Tavolo" }, { value: "TAKEAWAY", label: "Asporto" }, { value: "DELIVERY", label: "Consegna" }] },
         { name: "hasCooking", label: "Chiedi cottura", type: "bool" }, { name: "available", label: "Disponibile", type: "bool" }, { name: "active", label: "Attivo nel menu", type: "bool" },
         { name: "specialty", label: "Specialità della casa", type: "bool" }, { name: "recommended", label: "Consigliato", type: "bool" },
-        { name: "dailySpecial", label: "Piatto del giorno", type: "bool" }, { name: "offMenu", label: "Fuori menu", type: "bool" }, { name: "seasonal", label: "Stagionale", type: "bool" }, { name: "isDemo", label: "Dato dimostrativo", type: "bool" },
+        { name: "dailySpecial", label: "Piatto del giorno", type: "bool" }, { name: "offMenu", label: "Fuori menu", type: "bool" }, { name: "seasonal", label: "Stagionale", type: "bool" }, { name: "isDemo", label: "Contenuto da verificare", type: "bool" },
         { name: "optionGroups", label: "Varianti, contorni e aggiunte", type: "json", help: 'Es. [{"name":"Contorno","minSelect":0,"maxSelect":1,"options":[{"name":"Patate","priceCents":400,"available":true}]}]' },
       ]}
       columns={[
-        { key: "name", label: "Piatto", render: r => <span>{r.name} {r.isDemo && <span className="demo-badge">Demo</span>}</span> },
+        { key: "name", label: "Piatto" },
         { key: "category", label: "Categoria", render: r => r.category?.name },
         { key: "price", label: "Prezzo", render: r => r.pricePending ? "Da definire" : priceLabel(r.priceMode as PriceMode, r.priceCents) },
         { key: "available", label: "Stato", render: r => !r.active ? "Disattivato" : r.available ? <span className="text-green-400">Disponibile</span> : <span className="text-gold">Esaurito</span> },

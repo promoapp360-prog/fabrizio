@@ -59,7 +59,7 @@ function List({ items, onOpen }: { items: P[]; onOpen: (p: P) => void }) {
     <li key={p.id}><button onClick={() => onOpen(p)} className={`flex w-full gap-3 py-5 text-left sm:gap-5 ${!p.available ? "opacity-60" : ""}`}>
       {p.image && <img src={p.image} alt={p.name} loading="lazy" className="h-24 w-24 shrink-0 rounded-xl object-cover sm:h-28 sm:w-28" />}
       <div className="min-w-0 flex-1">
-        <p className="font-display uppercase">{p.name} {p.isDemo && <span className="demo-badge">Esempio</span>} {p.seasonal && <span className="demo-badge">Stagionale</span>}</p>
+        <p className="font-display uppercase">{p.name} {p.seasonal && <span className="demo-badge">Stagionale</span>}</p>
         {(p.specialty || p.recommended || p.dailySpecial || p.offMenu) && <p className="mt-1 text-xs text-gold">{[p.specialty && "Specialità della casa", p.recommended && "Consigliato", p.dailySpecial && "Del giorno", p.offMenu && "Fuori menu"].filter(Boolean).join(" · ")}</p>}
         {p.description && <p className="line-clamp-2 text-sm text-cream/60">{p.description}</p>}
         {!!p.allergens.length && <p className="mt-1 text-[11px] text-cream/50">Allergeni: {p.allergens.map(a => a.name + (a.traces ? " (tracce)" : "")).join(", ")}</p>}
@@ -90,7 +90,6 @@ function ProductSheet({ p, cooking, cartEnabled, onClose, onAdd }: { p: P; cooki
         {p.images.length > 1 && <div className="mb-4 flex gap-2 overflow-x-auto">{p.images.slice(1).map((src, i) => <a key={`${src}-${i}`} href={src} target="_blank" rel="noreferrer"><img src={src} alt={`${p.name} · foto ${i + 2}`} className="h-24 w-32 shrink-0 rounded-lg object-cover" /></a>)}</div>}
         <div className="flex items-start justify-between gap-4"><h3 id="ps-title" className="text-2xl">{p.name}</h3><button onClick={onClose} aria-label="Chiudi" className="text-2xl">×</button></div>
         <p className="text-gold">{p.pricePending ? "Prezzo da definire dall’amministratore" : priceLabel(p.priceMode as PriceMode, p.priceCents)}</p>
-        {p.isDemo && <p className="mt-2 rounded-lg border border-gold/30 p-3 text-xs text-cream/70">Esempio dimostrativo: fotografia rappresentativa e ricetta da confermare dal ristoratore. Non costituisce un’offerta ufficiale.</p>}
         {!p.available && <p className="mt-2 text-gold">Non disponibile · non ordinabile</p>}
         {p.description && <p className="mt-3 text-cream/80">{p.description}</p>}
         {p.ingredients && <p className="mt-2 text-sm text-cream/60"><b>Ingredienti:</b> {p.ingredients}</p>}

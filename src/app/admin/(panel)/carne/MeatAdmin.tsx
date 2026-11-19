@@ -18,14 +18,14 @@ export default function MeatAdmin() {
         { name: "tasting", label: "Caratteristiche organolettiche", type: "textarea" }, { name: "body", label: "Curiosità e approfondimenti", type: "textarea" },
         { name: "certifications", label: "Certificazioni e tracciabilità", type: "textarea", help: "Inserire solo se documentate" }, { name: "certVerified", label: "Certificazioni verificate su documenti", type: "bool" },
         { name: "cutIds", label: "Tagli associati", type: "multiselect", options: o(cuts) }, { name: "images", label: "Foto (URL)", type: "images" }, { name: "videoUrl", label: "Video (URL)" },
-        { name: "available", label: "Disponibile (confermato dal ristoratore)", type: "bool" }, { name: "published", label: "Pubblicata", type: "bool" }, { name: "isDemo", label: "Dato dimostrativo", type: "bool" }]}
-      columns={[{ key: "name", label: "Razza", render: r => <>{r.name} {r.isDemo && <span className="demo-badge">Demo</span>}</> }, { key: "country", label: "Origine" }, { key: "available", label: "Disponibile", render: r => r.available ? "Sì" : "No" }, { key: "published", label: "Pubblicata", render: r => r.published ? "Sì" : "No" }]} />}
+        { name: "available", label: "Disponibile (confermato dal ristoratore)", type: "bool" }, { name: "published", label: "Pubblicata", type: "bool" }, { name: "isDemo", label: "Contenuto da verificare", type: "bool" }]}
+      columns={[{ key: "name", label: "Razza" }, { key: "country", label: "Origine" }, { key: "available", label: "Disponibile", render: r => r.available ? "Sì" : "No" }, { key: "published", label: "Pubblicata", render: r => r.published ? "Sì" : "No" }]} />}
     {tab === "cuts" && <ResourceManager key="c" resource="cuts" title="Atlante dei tagli" canDuplicate defaults={{ images: [], published: true }}
       fields={[{ name: "name", label: "Nome", required: true }, { name: "slug", label: "Slug", required: true }, { name: "altNames", label: "Altri nomi" },
         { name: "zone", label: "Zona nell'illustrazione", type: "select", options: ZONES.map(z => ({ value: z.id, label: z.label })) }, { name: "anatomy", label: "Posizione anatomica" }, { name: "position", label: "Ordine", type: "number" },
         { name: "description", label: "Caratteristiche", type: "textarea" }, { name: "flavour", label: "Sapore" }, { name: "texture", label: "Consistenza" }, { name: "cooking", label: "Modalità di cottura" }, { name: "ageing", label: "Frollatura" },
-        { name: "images", label: "Foto (URL)", type: "images" }, { name: "published", label: "Pubblicato", type: "bool" }, { name: "isDemo", label: "Dato dimostrativo", type: "bool" }]}
-      columns={[{ key: "name", label: "Taglio", render: r => <>{r.name} {r.isDemo && <span className="demo-badge">Demo</span>}</> }, { key: "zone", label: "Zona", render: r => ZONES.find(z => z.id === r.zone)?.label ?? "—" }]} />}
+        { name: "images", label: "Foto (URL)", type: "images" }, { name: "published", label: "Pubblicato", type: "bool" }, { name: "isDemo", label: "Contenuto da verificare", type: "bool" }]}
+      columns={[{ key: "name", label: "Taglio" }, { key: "zone", label: "Zona", render: r => ZONES.find(z => z.id === r.zone)?.label ?? "—" }]} />}
     {tab === "farming" && <ResourceManager key="f" resource="farming" title="Tipologie di allevamento"
       fields={[{ name: "name", label: "Nome", required: true }, { name: "slug", label: "Slug", required: true }, { name: "description", label: "Descrizione", type: "textarea", required: true }]}
       columns={[{ key: "name", label: "Nome" }, { key: "description", label: "Descrizione", render: r => <span className="line-clamp-1">{r.description}</span> }]} />}

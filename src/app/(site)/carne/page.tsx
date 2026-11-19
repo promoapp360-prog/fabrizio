@@ -21,7 +21,7 @@ export default async function Carne() {
       <p className="mt-3 max-w-2xl text-cream/60">Schede informative. La disponibilità effettiva è indicata solo quando confermata dal ristorante.</p>
       <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{breeds.map(b => (
         <Link key={b.id} href={`/carne/razze/${b.slug}`} className="card group hover:border-gold/60">
-          <div className="flex items-start justify-between"><h3 className="text-2xl group-hover:text-gold">{b.name}</h3>{b.isDemo && <span className="demo-badge">Demo</span>}</div>
+          <div className="flex items-start justify-between"><h3 className="text-2xl group-hover:text-gold">{b.name}</h3></div>
           <p className="text-sm text-cream/60">{[b.type, b.country].filter(Boolean).join(" · ")}</p>
           <p className="mt-3 line-clamp-3 text-cream/80">{b.tasting}</p>
           <p className={`mt-4 text-xs uppercase tracking-widest ${b.available ? "text-gold" : "text-cream/40"}`}>{b.available ? "Disponibile" : "Disponibilità su richiesta"}</p>

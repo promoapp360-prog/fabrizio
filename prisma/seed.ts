@@ -6,6 +6,7 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
+import { PRODUCT_COPY, SITE_COPY, withoutDemoLabel } from "../src/lib/restaurant-content";
 const db = new PrismaClient();
 
 async function main() {
@@ -79,7 +80,7 @@ async function main() {
   for (const p of prods) {
     const { allergens, ...data } = p as typeof p & { allergens?: string[] };
     const exists = await db.product.findUnique({ where: { slug: p.slug } }); if (exists) continue;
-    const created = await db.product.create({ data: { ...data, priceCents: 0, pricePending: true, isDemo: true } as never });
+    const created = await db.product.create({ data: { ...data, name: withoutDemoLabel(data.name), ...PRODUCT_COPY[p.slug], priceCents: 0, pricePending: true, isDemo: true } as never });
     if (allergens) await db.productAllergen.createMany({ data: allergens.map(a => ({ productId: created.id, allergenId: A[a] })) });
     if (p.slug === "demo-costata" || p.slug === "demo-filetto")
       await db.optionGroup.create({ data: { productId: created.id, name: "Contorno", minSelect: 0, maxSelect: 1, options: { create: [{ name: "Patate al forno", priceCents: 400 }, { name: "Verdure grigliate", priceCents: 400 }] } } });
@@ -101,12 +102,12 @@ async function main() {
   const pages: [string, string, [string, object][]][] = [
     ["home", "Homepage", [
       ["hero", { restaurantHome: true, title: "VECCIARÍ", subtitle: "MATERA", image: "/api/media/assets/hero-desktop.png", mobileImage: "/api/media/assets/hero-mobile.png" }],
-      ["philosophy", { eyebrow: "La filosofia", title: "Il fuoco come linguaggio", body: "[DEMO] Testo segnaposto: racconta qui la filosofia del locale.\n\nQuesto paragrafo è modificabile da Admin › Contenuti." }],
+      ["philosophy", SITE_COPY.homePhilosophy],
       ["meats", { title: "Le nostre carni", eyebrow: "Selezioni" }], ["cuts", { title: "I tagli", eyebrow: "Atlante" }], ["menuPreview", { title: "Dalla brace" }],
-      ["quality", { eyebrow: "Qualità e provenienza", title: "Dalla filiera al piatto", body: "[DEMO] Descrivi fornitori e provenienze reali. Non inserire certificazioni non documentate." }],
+      ["quality", SITE_COPY.homeQuality],
       ["gallery", { gallery: "home" }], ["reviews", { items: [] }], ["contacts", { title: "Orari e contatti" }],
     ]],
-    ["ristorante", "Il ristorante", [["hero", { title: "Il ristorante", subtitle: "La nostra storia" }], ["richtext", { eyebrow: "Storia", title: "Da dove veniamo", body: "[DEMO] Storia del ristorante." }], ["richtext", { eyebrow: "Ambienti", title: "La sala", body: "[DEMO] Descrizione degli ambienti." }], ["richtext", { eyebrow: "Cucina", title: "Brace e materia prima", body: "[DEMO] La cucina e la selezione delle materie prime." }], ["gallery", { gallery: "ristorante" }]]],
+    ["ristorante", "Il ristorante", [["hero", { title: "Il ristorante", subtitle: "La nostra storia" }], ["richtext", SITE_COPY.restaurantStory], ["richtext", SITE_COPY.restaurantRoom], ["richtext", SITE_COPY.restaurantKitchen], ["gallery", { gallery: "ristorante" }]]],
     ["privacy", "Informativa privacy", [["richtext", { body: "[DA COMPLETARE] Inserire l'informativa privacy redatta dal titolare/consulente GDPR: titolare, finalità (prenotazioni, ordini, marketing facoltativo), basi giuridiche, tempi di conservazione, diritti dell'interessato, contatti." }]]],
     ["cookie", "Cookie policy", [["richtext", { body: "[DA COMPLETARE] Cookie tecnici: sessione gestionale, preferenze consenso (localStorage). Cookie statistici: Google Analytics 4, solo previo consenso." }]]],
   ];
