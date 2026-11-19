@@ -14,16 +14,16 @@ export async function SectionRenderer({ type, c, s }: { type: string; c: C; s: S
       c.restaurantHome ? <section className="restaurant-hero relative overflow-hidden bg-ink text-center" aria-label="Vecciarì – Grano & Brace, Matera">
         <picture className="absolute inset-0">
           <source media="(min-width: 768px)" srcSet={c.image || "/api/media/assets/hero-desktop.png"} />
-          <img src={c.mobileImage || "/api/media/assets/hero-mobile.png"} alt="Antica macelleria con banco di marmo bianco e tagli di carne sul ceppo in legno" fetchPriority="high" className="h-full w-full object-cover" />
+          <img src={c.mobileImage || "/api/media/assets/hero-mobile.png"} alt="Antica macelleria con banco di marmo bianco e tagli di carne sul ceppo in legno" fetchPriority="high" className="h-full w-full" />
         </picture>
         <div className="restaurant-hero-shade absolute inset-0" />
         <div className="restaurant-hero-content reveal relative z-10 mx-auto flex flex-col items-center px-5">
           <img src={s.brand.mark} alt="Simbolo originale Vecciarì: fiamma e spiga" className="hero-mark w-auto" />
-          <h1 className="hero-name mt-3 text-cream">{c.title || "VECCIARÍ"}</h1>
-          <p className="mt-2 text-xs uppercase tracking-[0.5em] text-cream md:text-sm">{c.subtitle || "MATERA"}</p>
-          <div className="mt-6 flex w-full max-w-xs flex-col justify-center gap-3 sm:max-w-none sm:flex-row md:mt-8">
-            <Link href="/prenota" className="btn-gold min-h-12">Prenota</Link>
-            <Link href="/menu" className="btn-ghost min-h-12 !border-cream/70 !bg-ink/40 !text-cream hover:!bg-ink/70">Scopri il menu</Link>
+          <h1 className="hero-name text-cream">{c.title || "VECCIARÍ"}</h1>
+          <p className="hero-location uppercase text-cream">{c.subtitle || "MATERA"}</p>
+          <div className="hero-actions flex flex-col justify-center">
+            <Link href="/prenota" className="btn-gold">Prenota</Link>
+            <Link href="/menu" className="btn-ghost !bg-ink/40 hover:!bg-ink/70 md:!border-cream/70 md:!text-cream">Scopri il menu</Link>
           </div>
         </div>
       </section> : <section className="relative flex min-h-[70vh] items-center justify-center overflow-hidden text-center">

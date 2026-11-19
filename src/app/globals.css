@@ -22,18 +22,40 @@ h1, h2, h3, .display { @apply font-display uppercase tracking-tight; }
 .label { @apply mb-1 block text-xs uppercase tracking-widest text-cream/60; }
 .demo-badge { @apply inline-block rounded bg-cream/10 px-2 py-0.5 text-[10px] uppercase tracking-widest text-cream/60; }
 .reveal { animation: reveal .8s ease both; }
-.restaurant-hero { width: 100%; height: calc(100svh - 4rem); min-height: 660px; max-height: 1000px; }
-.restaurant-hero picture img { object-position: center center; }
-.restaurant-hero-shade { background: linear-gradient(180deg,rgba(10,10,8,.6),rgba(10,10,8,.26) 42%,transparent 65%,rgba(10,10,8,.15)); }
-.restaurant-hero-content { padding-top: 30px; }
-.hero-mark { height: clamp(72px,12svh,100px); }
-.hero-name { font-size: clamp(2.25rem,10vw,3.2rem); line-height: 1.05; text-shadow: 0 2px 18px rgba(0,0,0,.6); }
+.site-header { --site-header-height: 64px; }
+.site-header-row { height: var(--site-header-height); }
+.mobile-nav-panel { position: fixed; inset: var(--site-header-height) 0 0; overflow-y: auto; overscroll-behavior: contain; padding: clamp(20px,5vw,40px) clamp(24px,6vw,48px); }
+.mobile-nav-link { display: block; padding: 16px 0; border-bottom: 1px solid rgb(var(--c-cream) / .1); font-family: "Kurdis",sans-serif; font-size: clamp(17px,4.8vw,20px); line-height: 1.4; letter-spacing: .07em; text-transform: uppercase; color: rgb(var(--c-cream) / .85); }
+.mobile-nav-link:hover, .mobile-nav-link[aria-current="page"] { color: rgb(var(--c-gold)); }
+.mobile-nav-link:focus-visible { outline: 2px solid rgb(var(--c-gold)); outline-offset: 5px; border-radius: 2px; }
+@media (max-width: 1023px) {
+  .site-header--home { --site-header-height: 80px; }
+  .site-header--home + .site-main { padding-top: 80px; }
+  .header-brand { gap: 10px; }
+  .header-brand-mark { height: 52px; }
+  .header-brand-name { font-size: clamp(25px,6.8vw,29px); line-height: 1.05; font-weight: 700; letter-spacing: .015em; }
+  .header-brand-subtitle { margin-top: 7px; font-size: clamp(8px,2.2vw,9px); line-height: 1.1; letter-spacing: .14em; }
+}
+/* La scena verticale resta intera: il suo rapporto originale non dipende dall'altezza del telefono. */
+.restaurant-hero { width: 100%; height: auto; aspect-ratio: 683 / 1024; }
+.restaurant-hero picture img { object-fit: contain; object-position: center center; }
+.restaurant-hero-shade { background: linear-gradient(180deg,rgba(10,10,8,.64),rgba(10,10,8,.35) 30%,rgba(10,10,8,.06) 45%,transparent 65%); }
+.restaurant-hero-content { padding-top: clamp(12px,4vw,22px); }
+.hero-mark { height: clamp(46px,13vw,58px); }
+.hero-name { margin-top: 8px; font-size: clamp(36px,10.5vw,46px); font-weight: 700; line-height: 1.05; text-shadow: 0 2px 18px rgba(0,0,0,.6); }
+.hero-location { margin-top: 6px; font-size: 11px; line-height: 1.2; letter-spacing: .42em; padding-left: .42em; }
+.hero-actions { margin-top: clamp(12px,3.5vw,18px); width: clamp(190px,57vw,245px); gap: 9px; }
+.hero-actions .btn-gold, .hero-actions .btn-ghost { min-height: 44px; padding: 10px 20px; font-size: 14px; }
 @media (min-width: 768px) {
   .restaurant-hero { height: auto; aspect-ratio: 1024 / 539; min-height: 520px; max-height: 880px; }
+  .restaurant-hero picture img { object-fit: cover; }
   .restaurant-hero-shade { background: linear-gradient(90deg,rgba(10,10,8,.65),rgba(10,10,8,.35) 48%,rgba(10,10,8,.03) 72%); }
   .restaurant-hero-content { position: absolute; top: 50%; left: 28%; transform: translate(-50%,-50%); width: 52%; padding-top: 0; animation: none; }
   .hero-mark { height: clamp(85px,8vw,130px); }
-  .hero-name { font-size: clamp(2.75rem,5.5vw,5rem); }
+  .hero-name { margin-top: 12px; font-size: clamp(2.75rem,5.5vw,5rem); font-weight: 400; }
+  .hero-location { margin-top: 8px; font-size: 14px; line-height: 20px; letter-spacing: .5em; padding-left: 0; }
+  .hero-actions { margin-top: 32px; width: 100%; flex-direction: row; gap: 12px; }
+  .hero-actions .btn-gold, .hero-actions .btn-ghost { min-height: 48px; padding: 12px 24px; font-size: 16px; }
 }
 @keyframes reveal { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .reveal { animation: none; } html { scroll-behavior: auto; } }
