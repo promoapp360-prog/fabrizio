@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { reservationInputSchema, todayInRome, type ReservationAvailability } from "@/lib/reservation-input";
+import { closeWhatsAppDraftWindow, finishWhatsAppDraftWindow, openWhatsAppDraftWindow, reservationWhatsAppMessage } from "@/lib/whatsapp-draft";
 import ReservationReceipt from "./ReservationReceipt";
 
 type Step = 0 | 1 | 2 | 3;
@@ -69,6 +70,7 @@ export default function ReservationForm({ maxParty, phone, whatsapp, initialRece
     if (step !== 3) { advance(); return; }
     const parsed = reservationInputSchema.safeParse({ ...f, idempotencyKey: idem });
     if (!parsed.success) { setError("Completa nome, telefono, email valida e consenso privacy."); return; }
+    const whatsappWindow = wa ? openWhatsAppDraftWindow() : null;
     setBusy(true); setError("");
     try {
       const r = await fetch("/api/reservations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(parsed.data) });
@@ -77,9 +79,15 @@ export default function ReservationForm({ maxParty, phone, whatsapp, initialRece
         if (r.status === 409) { setF(current => ({ ...current, time: "" })); setStep(2); setRefresh(n => n + 1); }
         throw new Error(j.error || "Richiesta non inviata. Riprova.");
       }
+      finishWhatsAppDraftWindow(whatsappWindow, whatsapp, reservationWhatsAppMessage({
+        code: j.code, date: parsed.data.date, time: parsed.data.time, people: parsed.data.people,
+      }));
       setReceiptId(j.id);
       router.replace(`/prenota?richiesta=${encodeURIComponent(j.id)}`, { scroll: false });
-    } catch (e) { setError(e instanceof Error ? e.message : "Connessione assente: riprova senza duplicare la richiesta."); }
+    } catch (e) {
+      closeWhatsAppDraftWindow(whatsappWindow);
+      setError(e instanceof Error ? e.message : "Connessione assente: riprova senza duplicare la richiesta.");
+    }
     finally { setBusy(false); }
   }
   function startAgain() {
@@ -145,6 +153,7 @@ export default function ReservationForm({ maxParty, phone, whatsapp, initialRece
       <label className="flex items-start gap-3 text-sm"><input className="mt-1 h-4 w-4 shrink-0" type="checkbox" required checked={f.privacy} onChange={e => set("privacy", e.target.checked)} /><span>Ho letto l’<a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline">informativa privacy</a> e acconsento al trattamento dei dati per gestire la prenotazione. *</span></label>
       <label className="flex items-start gap-3 text-sm"><input className="mt-1 h-4 w-4 shrink-0" type="checkbox" checked={f.marketing} onChange={e => set("marketing", e.target.checked)} /><span>Desidero ricevere novità e promozioni (facoltativo).</span></label>
       <p className="text-xs text-cream/60">Stai inviando una richiesta: il tavolo sarà confermato dal ristorante. Nessun pagamento richiesto.</p>
+       {wa && <p className="text-xs text-cream/60">Dopo la registrazione proveremo ad aprire WhatsApp con il riepilogo. Il messaggio parte solo se premi “Invia”.</p>}
       <button className="btn-gold min-h-12 w-full" disabled={busy || !f.time || loading || !!availabilityError}>{busy ? "Invio in corso…" : "Invia richiesta di prenotazione"}</button>
     </div>}
     {availabilityError && <div role="alert" className="space-y-2 rounded-xl border border-red-400/40 p-3 text-sm"><p>{availabilityError}</p><button type="button" onClick={() => setRefresh(n => n + 1)} className="text-gold underline">Riprova disponibilità</button></div>}

@@ -9,8 +9,9 @@ import { customerOrderSchema } from "@/lib/checkout";
 import { useLiveCart } from "@/components/public/useLiveCart";
 import { useMenuRefresh } from "@/components/public/useMenuRefresh";
 import { formatEUR } from "@/lib/pricing";
+import { closeWhatsAppDraftWindow, finishWhatsAppDraftWindow, openWhatsAppDraftWindow, orderWhatsAppMessage } from "@/lib/whatsapp-draft";
 
-export default function OnlineOrder(p: { menu: MenuData; cooking: string[]; table: boolean; takeaway: boolean; delivery: boolean; prepMinutes: number; feeDelivery: number; minDelivery: number; zones: string }) {
+export default function OnlineOrder(p: { menu: MenuData; cooking: string[]; table: boolean; takeaway: boolean; delivery: boolean; prepMinutes: number; feeDelivery: number; minDelivery: number; zones: string; whatsapp: string }) {
   useMenuRefresh();
   const router = useRouter();
   const [cart, setCart] = useState<CartLine[]>([]), [notes, setNotes] = useState(""), [busy, setBusy] = useState(false);
@@ -28,6 +29,7 @@ export default function OnlineOrder(p: { menu: MenuData; cooking: string[]; tabl
     if (channel === "TABLE" && (!Number.isInteger(Number(details.tableNumber)) || Number(details.tableNumber) < 1)) { setError("Inserisci il numero del tavolo."); return; }
     const pickup = channel === "TABLE" ? undefined : new Date(details.pickupAt);
     if (pickup && !Number.isFinite(pickup.getTime())) { setError("Scegli l’orario di ritiro."); return; }
+    const whatsappWindow = p.whatsapp ? openWhatsAppDraftWindow() : null;
     setBusy(true);
     try {
       const r = await fetch("/api/online-order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
@@ -39,9 +41,17 @@ export default function OnlineOrder(p: { menu: MenuData; cooking: string[]; tabl
       }) });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || "Ordine non inviato");
+      finishWhatsAppDraftWindow(whatsappWindow, p.whatsapp, orderWhatsAppMessage({
+        number: j.number, channel,
+        tableNumber: channel === "TABLE" ? Number(details.tableNumber) : undefined,
+        pickupAt: pickup?.toISOString(), pickupName: details.name, address: details.address,
+        items: cart.map(line => ({ name: line.name, quantity: line.quantity, cooking: line.cooking, options: line.optionNames, notes: line.notes })),
+        totalCents: cart.reduce((sum, line) => sum + line.estCents, 0) + (channel === "DELIVERY" ? p.feeDelivery : 0),
+        weighted: cart.some(line => line.weighted), notes,
+      }));
       // Retain the cart until navigation succeeds; retries reuse the same key.
       router.push(`/ordine/${j.id}`);
-    } catch (e) { setError(e instanceof Error ? e.message : "Connessione assente. Puoi riprovare senza duplicare l’ordine."); setBusy(false); }
+    } catch (e) { closeWhatsAppDraftWindow(whatsappWindow); setError(e instanceof Error ? e.message : "Connessione assente. Puoi riprovare senza duplicare l’ordine."); setBusy(false); }
   }
   const modes = [
     ...(p.table ? [{ id: "TABLE" as const, label: "Al tavolo" }] : []),
@@ -57,6 +67,7 @@ export default function OnlineOrder(p: { menu: MenuData; cooking: string[]; tabl
       <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">
         <CartPanel cart={cart} setCart={setCart} notes={notes} setNotes={setNotes} busy={busy} onSubmit={submit} feeCents={channel === "DELIVERY" ? p.feeDelivery : 0} cta="Conferma ordine · paga alla cassa">
           <OrderDetails value={details} onChange={value => { setDetails(value); setError(""); }} channel={channel} prepMinutes={p.prepMinutes} />
+          {p.whatsapp && <p className="mt-3 text-xs text-cream/60">Dopo la registrazione proveremo ad aprire WhatsApp con il numero e il riepilogo, inclusi nome e, per la consegna, indirizzo. Email e telefono non sono inseriti. Il messaggio parte solo se premi “Invia”.</p>}
           {channel === "DELIVERY" && <p className="mt-3 text-xs text-cream/60">Minimo {formatEUR(p.minDelivery)} · Consegna {formatEUR(p.feeDelivery)}{p.zones && ` · Zone: ${p.zones}`}</p>}
           {error && <p role="alert" className="mt-3 rounded bg-red-900/50 p-3 text-sm">{error}</p>}
         </CartPanel>

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { reservationWhatsAppMessage } from "@/lib/whatsapp-draft";
 
 type Receipt = { code: string; status: string; startsAt: string; people: number; emailStatus: string };
 const labels: Record<string, string> = {
@@ -24,7 +25,10 @@ export default function ReservationReceipt({ id, phone, whatsapp, onNew }: { id:
   }, [id]);
   if (!receipt) return <div role="status" className="card mt-8 space-y-4"><p>{error || "Caricamento del riepilogo…"}</p>{error && <button className="btn-ghost" onClick={onNew}>Torna alle prenotazioni</button>}</div>;
   const date = new Date(receipt.startsAt).toLocaleString("it-IT", { timeZone: "Europe/Rome", dateStyle: "full", timeStyle: "short" });
-  const message = `Buongiorno, ho inviato una richiesta di prenotazione a Vecciarì. Codice ${receipt.code}: ${date}, ${receipt.people} persone. Potete confermarmi il tavolo?`;
+  const startsAt = new Date(receipt.startsAt);
+  const localDate = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Rome" }).format(startsAt);
+  const localTime = new Intl.DateTimeFormat("it-IT", { timeZone: "Europe/Rome", hour: "2-digit", minute: "2-digit" }).format(startsAt);
+  const message = reservationWhatsAppMessage({ code: receipt.code, date: localDate, time: localTime, people: receipt.people });
   return <section className="card mt-8 space-y-5 text-center" aria-label="Riepilogo prenotazione">
     <img src="/brand/fiamma-oro.webp" alt="" className="mx-auto h-16" />
     <h2 className="text-3xl text-gold" role="status">{labels[receipt.status] || "Stato prenotazione"}</h2>
@@ -33,8 +37,8 @@ export default function ReservationReceipt({ id, phone, whatsapp, onNew }: { id:
     <p className="text-xs text-cream/60">Conserva il codice o il link di questa pagina: il riepilogo rimane disponibile dopo la ricarica e lo stato si aggiorna automaticamente.</p>
     <p className="text-sm text-cream/65">{receipt.emailStatus === "sent" ? "Email di ricezione della richiesta inviata." : receipt.emailStatus === "sending" ? "Email di ricezione in invio." : "L’email di ricezione non è disponibile in questo momento. La richiesta è registrata: conserva questo riepilogo."}</p>
     {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
-    {!["CANCELLED", "COMPLETED", "NO_SHOW"].includes(receipt.status) && whatsapp && <a className="btn-gold min-h-12 w-full" href={`https://wa.me/${whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`} target="_blank" rel="noopener noreferrer">Invia anche su WhatsApp</a>}
-    <p className="text-xs text-cream/50">Il collegamento WhatsApp apre un messaggio precompilato: scegli tu se inviarlo. Non è una conferma automatica.</p>
+    {!["CANCELLED", "COMPLETED", "NO_SHOW"].includes(receipt.status) && whatsapp && <a className="btn-gold min-h-12 w-full" href={`https://wa.me/${whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`} target="_blank" rel="noopener noreferrer">Se non si è aperto, apri WhatsApp</a>}
+    {whatsapp && <p className="text-xs text-cream/50">WhatsApp mostra il riepilogo già compilato. Controllalo e premi “Invia” se vuoi inoltrarlo al ristorante.</p>}
     {phone && <a className="btn-ghost min-h-12 w-full" href={`tel:${phone.replace(/[^\d+]/g, "")}`}>Chiama il ristorante</a>}
     <button type="button" className="w-full py-3 text-sm underline" onClick={onNew}>Nuova richiesta</button>
   </section>;

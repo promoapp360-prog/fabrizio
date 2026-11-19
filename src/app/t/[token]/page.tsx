@@ -14,5 +14,5 @@ export default async function TablePage({ params: pendingParams }: { params: Pro
   const menu = await loadMenu("TABLE");
   const isTable = qr.kind === "TABLE" && !!qr.table;
   return <TableOrder token={params.token} tableLabel={isTable ? (qr.table!.label || `Tavolo ${qr.table!.number}`) : null} menu={menu} cooking={s.cooking}
-    tableNumber={isTable ? qr.table!.number : undefined} orderingOn={isTable && s.ordering.tableEnabled} logo={s.brand.logo} />;
+    tableNumber={isTable ? qr.table!.number : undefined} orderingOn={isTable && s.ordering.tableEnabled} logo={s.brand.logo} whatsapp={s.contacts.whatsapp} />;
 }
