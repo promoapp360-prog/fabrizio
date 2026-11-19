@@ -49,3 +49,23 @@ export function checkCapacity(opts: { shift: ShiftLite; existing: ResLite[]; peo
     return { ok: false as const, reason: "Nessun tavolo adatto libero in questa fascia oraria" };
   return { ok: true as const };
 }
+
+/** Same capacity rules for the public picker and the final server-side check. */
+export function availableSlotsForDay(opts: {
+  day: Date; shifts: ShiftLite[]; existing: ResLite[]; tables: TableLite[];
+  people: number; durationMin: number; maxPartyOnline: number; minNoticeMin: number; now?: Date;
+}) {
+  const earliest = (opts.now ?? new Date()).getTime() + opts.minNoticeMin * 60000;
+  return [...new Set(slotsForDay(opts.shifts, opts.day))].sort().filter(time => {
+    const at = new Date(opts.day);
+    const [hours, minutes] = time.split(":").map(Number);
+    at.setHours(hours, minutes, 0, 0);
+    const shift = findShift(opts.shifts, at);
+    if (!shift || at.getTime() < earliest) return false;
+    return checkCapacity({
+      shift, existing: opts.existing.filter(res => !!findShift([shift], res.startsAt)),
+      tables: opts.tables, people: opts.people, startsAt: at,
+      durationMin: opts.durationMin, maxPartyOnline: opts.maxPartyOnline,
+    }).ok;
+  });
+}
