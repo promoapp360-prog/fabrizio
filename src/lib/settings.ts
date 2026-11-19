@@ -2,7 +2,7 @@ import { db } from "./db";
 import { RESTAURANT_CONTACTS, RESTAURANT_HOURS } from "./restaurant-content";
 // Impostazioni con valori di default: l'admin le sovrascrive da /admin/impostazioni.
 export const DEFAULTS = {
-  brand: { name: "Vecciarì", tagline: "Grano & Brace", motto: "Matera", logo: "/brand/logo-naming-oro.webp", mark: "/brand/fiamma-oro.webp", favicon: "/icon-192.png",
+  brand: { name: "Vecciarì", tagline: "Grano & Brace", motto: "Matera", logo: "/brand/logo-naming-oro.webp", mark: "/brand/fiamma-oro.webp", favicon: "/icon-32.png",
     colors: { ink: "10 10 8", coal: "22 20 16", gold: "233 194 58", goldDeep: "201 150 30", cream: "250 246 236" } },
   contacts: { ...RESTAURANT_CONTACTS, email: "", mapsUrl: "", instagram: "https://www.instagram.com/vecciari_granoebrace/", facebook: "https://www.facebook.com/share/1EZLANWssE/?mibextid=wwXIfr",
     hours: RESTAURANT_HOURS },
@@ -10,7 +10,7 @@ export const DEFAULTS = {
     prepMinutes: 30, deliveryMinCents: 3000, deliveryFeeCents: 300, deliveryZones: "" },
   reservations: { autoConfirm: false, durationMin: 120, maxPartyOnline: 10, minNoticeMin: 60 },
   security: { minPasswordLength: 4 },
-  seo: { title: "Vecciarì — Grano & Brace, Matera", description: "Vecciarì – Grano & Brace a Matera. Scopri il menu, il mondo della carne e prenota il tuo tavolo." },
+  seo: { title: "Vecciarì — Matera", description: "Vecciarì – Grano & Brace a Matera. Scopri il menu, il mondo della carne e prenota il tuo tavolo." },
   cooking: ["Al sangue", "Media-al sangue", "Media", "Media-ben cotta", "Ben cotta"],
 };
 export type Settings = typeof DEFAULTS;
