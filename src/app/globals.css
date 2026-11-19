@@ -24,6 +24,7 @@ h1, h2, h3, .display { @apply font-display uppercase tracking-tight; }
 .reveal { animation: reveal .8s ease both; }
 .site-header { --site-header-height: 64px; }
 .site-header-row { height: var(--site-header-height); }
+.header-brand-name { text-align: center; }
 .mobile-nav-panel { position: fixed; inset: var(--site-header-height) 0 0; overflow-y: auto; overscroll-behavior: contain; padding: clamp(20px,5vw,40px) clamp(24px,6vw,48px); }
 .mobile-nav-link { display: block; padding: 16px 0; border-bottom: 1px solid rgb(var(--c-cream) / .1); font-family: "Kurdis",sans-serif; font-size: clamp(17px,4.8vw,20px); line-height: 1.4; letter-spacing: .07em; text-transform: uppercase; color: rgb(var(--c-cream) / .85); }
 .mobile-nav-link:hover, .mobile-nav-link[aria-current="page"] { color: rgb(var(--c-gold)); }
@@ -50,7 +51,7 @@ h1, h2, h3, .display { @apply font-display uppercase tracking-tight; }
   .restaurant-hero { height: auto; aspect-ratio: 1024 / 539; min-height: 520px; max-height: 880px; }
   .restaurant-hero picture img { object-fit: cover; }
   .restaurant-hero-shade { background: linear-gradient(90deg,rgba(10,10,8,.65),rgba(10,10,8,.35) 48%,rgba(10,10,8,.03) 72%); }
-  .restaurant-hero-content { position: absolute; top: 50%; left: 28%; transform: translate(-50%,-50%); width: 52%; padding-top: 0; animation: none; }
+  .restaurant-hero-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 52%; padding-top: 0; animation: none; }
   .hero-mark { height: clamp(85px,8vw,130px); }
   .hero-name { margin-top: 12px; font-size: clamp(2.75rem,5.5vw,5rem); font-weight: 400; }
   .hero-location { margin-top: 8px; font-size: 14px; line-height: 20px; letter-spacing: .5em; padding-left: 0; }
