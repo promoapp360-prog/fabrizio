@@ -18,6 +18,7 @@ export async function loadMenu(channel?: "TABLE" | "TAKEAWAY" | "DELIVERY" | "ON
     products: products.map(p => ({
       id: p.id, name: p.name, description: p.description, ingredients: p.ingredients, categoryId: p.categoryId, priceMode: p.priceMode,
       priceCents: channel && channel !== "TABLE" && p.takeawayPriceCents != null ? p.takeawayPriceCents : p.priceCents,
+      basePriceCents: p.priceCents, takeawayPriceCents: p.takeawayPriceCents,
       estWeightGrams: p.estWeightGrams, hasCooking: p.hasCooking, image: p.images[0] ?? null, images: p.images, available: p.available, channels: p.channels,
       dailySpecial: p.dailySpecial, offMenu: p.offMenu, seasonal: p.seasonal, origin: p.origin, pairing: p.pairing, isDemo: p.isDemo,
       specialty: p.specialty, recommended: p.recommended,

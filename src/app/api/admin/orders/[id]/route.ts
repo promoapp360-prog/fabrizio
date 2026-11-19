@@ -4,59 +4,73 @@ import { db } from "@/lib/db";
 import { handle, HttpError } from "@/lib/api";
 import { requirePermission } from "@/lib/auth";
 import { STATUS_FLOW } from "@/lib/orders";
-import { lineCents, type PriceMode } from "@/lib/pricing";
+import { lineCents, type PriceMode, isWeighted } from "@/lib/pricing";
 import { audit } from "@/lib/audit";
 import { can } from "@/lib/rbac";
+import { sendOrderEmail } from "@/lib/order-email";
 
 const schema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("status"), status: z.enum(["CONFIRMED", "PREPARING", "READY", "SERVED", "CANCELLED"]) }),
   z.object({ action: z.literal("weight"), itemId: z.string(), grams: z.number().int().min(1).max(5000) }),
   z.object({ action: z.literal("confirmFinal") }),
   z.object({ action: z.literal("payment"), method: z.enum(["AT_TABLE", "AT_COUNTER", "ON_PICKUP"]), amountCents: z.number().int().min(1) }),
+  z.object({ action: z.literal("retryEmail") }),
 ]);
 
-export const PATCH = handle(async (req: Request, { params: pendingParams }: { params: Promise<{ id: string }> }) => {
-  const params = await pendingParams;
+export const PATCH = handle(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
+  const { id } = await params;
   const user = await requirePermission("orders.view");
   const body = schema.parse(await req.json());
-  const order = await db.order.findUniqueOrThrow({ where: { id: params.id }, include: { items: true } });
+  if (body.action === "retryEmail") {
+    await requirePermission("orders.manage");
+    const notification = await sendOrderEmail(id);
+    return NextResponse.json({ status: notification?.status ?? "not_available" });
+  }
+  if (body.action === "status" && !can(user.role, "orders.manage") && !["PREPARING", "READY"].includes(body.status))
+    throw new HttpError(403, "Permesso negato");
+  if (body.action === "payment" || body.action === "confirmFinal") await requirePermission("orders.payments");
 
-  if (body.action === "status") {
-    // Cucina: solo avanzamento preparazione. Sala/Responsabile: tutto il flusso.
-    const kitchenOnly = !can(user.role, "orders.manage");
-    if (kitchenOnly && !["PREPARING", "READY"].includes(body.status)) throw new HttpError(403, "Permesso negato");
-    if (!STATUS_FLOW[order.status].includes(body.status)) throw new HttpError(409, `Passaggio non consentito da ${order.status} a ${body.status}`);
-    // Aggiornamento condizionale: evita che due operatori sovrascrivano lo stesso stato.
-    const r = await db.order.updateMany({ where: { id: order.id, status: order.status }, data: { status: body.status } });
-    if (!r.count) throw new HttpError(409, "Ordine aggiornato da un altro operatore, ricarica");
-    await db.orderEvent.create({ data: { orderId: order.id, status: body.status, userId: user.id } });
-    await audit(user.id, `order_${body.status.toLowerCase()}`, "Order", order.id);
-    return NextResponse.json({ ok: true });
-  }
-  if (body.action === "weight") {
-    const it = order.items.find(i => i.id === body.itemId);
-    if (!it) throw new HttpError(404, "Riga non trovata");
-    const fin = lineCents({ priceMode: it.priceMode as PriceMode, unitCents: it.unitCents, optionsCents: it.optionsCents, quantity: it.quantity, weightGrams: body.grams });
-    await db.orderItem.update({ where: { id: it.id }, data: { actualWeightGrams: body.grams, lineFinalCents: fin, weightConfirmed: false } });
-    await audit(user.id, "weight_set", "OrderItem", it.id, { grams: body.grams });
-    return NextResponse.json({ lineFinalCents: fin });
-  }
-  await requirePermission("orders.payments");
-  if (body.action === "confirmFinal") {
-    // Importo definitivo: comunicato al cliente e confermato prima dell'addebito.
-    const items = await db.orderItem.findMany({ where: { orderId: order.id } });
-    if (items.some(i => i.estWeightGrams != null && i.actualWeightGrams == null)) throw new HttpError(400, "Inserisci il peso effettivo di tutti i tagli a peso");
-    const total = items.reduce((s, i) => s + (i.lineFinalCents ?? i.lineEstCents), 0) + (order.channel === "DELIVERY" ? order.estimatedCents - order.items.reduce((s, i) => s + i.lineEstCents, 0) : 0);
-    await db.$transaction([
-      db.orderItem.updateMany({ where: { orderId: order.id }, data: { weightConfirmed: true } }),
-      db.order.update({ where: { id: order.id }, data: { finalCents: total } }),
-    ]);
-    await audit(user.id, "final_confirmed", "Order", order.id, { total });
-    return NextResponse.json({ finalCents: total });
-  }
-  // Pagamento registrato manualmente (contanti/POS). Nessun dato carta viene salvato.
-  if (order.finalCents == null) throw new HttpError(400, "Conferma prima l'importo definitivo");
-  const p = await db.payment.create({ data: { orderId: order.id, method: body.method, status: "PAID", amountCents: body.amountCents, recordedBy: user.id } });
-  await audit(user.id, "payment_recorded", "Order", order.id, { amount: body.amountCents, method: body.method });
-  return NextResponse.json(p);
+  const result = await db.$transaction(async tx => {
+    // Row lock serializes concurrent payments, weights and confirmations.
+    const order = await tx.order.update({ where: { id }, data: { updatedAt: new Date() }, include: { items: true, payments: true } });
+    const paid = order.payments.find(p => p.status === "PAID");
+    if (body.action === "status") {
+      if (!STATUS_FLOW[order.status].includes(body.status)) throw new HttpError(409, "Stato già aggiornato o passaggio non consentito");
+      if (paid && body.status === "CANCELLED") throw new HttpError(409, "Ordine già pagato: gestisci prima lo storno con il responsabile");
+      await tx.order.update({ where: { id }, data: { status: body.status } });
+      await tx.orderEvent.create({ data: { orderId: id, status: body.status, userId: user.id } });
+      return { data: { ok: true }, emailEvent: body.status };
+    }
+    if (order.status === "CANCELLED") throw new HttpError(409, "Ordine annullato");
+    if (body.action === "weight") {
+      if (paid) throw new HttpError(409, "Non puoi modificare il peso di un ordine pagato");
+      const item = order.items.find(i => i.id === body.itemId);
+      if (!item || !isWeighted(item.priceMode as PriceMode)) throw new HttpError(400, "Riga non a peso");
+      const total = lineCents({ priceMode: item.priceMode as PriceMode, unitCents: item.unitCents, optionsCents: item.optionsCents, quantity: item.quantity, weightGrams: body.grams });
+      await tx.orderItem.update({ where: { id: item.id }, data: { actualWeightGrams: body.grams, lineFinalCents: total, weightConfirmed: false } });
+      await tx.order.update({ where: { id }, data: { finalCents: null } });
+      return { data: { lineFinalCents: total }, emailEvent: null };
+    }
+    if (body.action === "confirmFinal") {
+      if (paid) throw new HttpError(409, "Ordine già pagato");
+      if (order.items.some(i => isWeighted(i.priceMode as PriceMode) && i.actualWeightGrams == null))
+        throw new HttpError(400, "Inserisci il peso effettivo di tutti i tagli a peso");
+      const deliveryFee = order.channel === "DELIVERY" ? order.estimatedCents - order.items.reduce((s, i) => s + i.lineEstCents, 0) : 0;
+      const total = order.items.reduce((s, i) => s + (i.lineFinalCents ?? i.lineEstCents), 0) + deliveryFee;
+      await tx.orderItem.updateMany({ where: { orderId: id }, data: { weightConfirmed: true } });
+      await tx.order.update({ where: { id }, data: { finalCents: total } });
+      return { data: { finalCents: total }, emailEvent: "FINAL" };
+    }
+    if (order.finalCents == null) throw new HttpError(400, "Conferma prima l’importo definitivo dopo la pesatura");
+    if (body.amountCents !== order.finalCents) throw new HttpError(400, "L’importo deve corrispondere al totale definitivo");
+    if (paid) {
+      if (paid.amountCents !== body.amountCents || paid.method !== body.method) throw new HttpError(409, "Pagamento già registrato con dati diversi");
+      return { data: paid, emailEvent: "PAID" };
+    }
+    const payment = await tx.payment.create({ data: { orderId: id, method: body.method, status: "PAID", amountCents: body.amountCents, recordedBy: user.id } });
+    return { data: payment, emailEvent: "PAID" };
+  });
+  await audit(user.id, `order_${body.action}`, "Order", id);
+  if (result.emailEvent) await sendOrderEmail(id, result.emailEvent);
+  return NextResponse.json(result.data);
 });

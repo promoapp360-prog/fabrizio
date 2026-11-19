@@ -3,6 +3,9 @@ import { db } from "@/lib/db";
 import { handle, HttpError, rateLimit, clientIp } from "@/lib/api";
 import { cartSchema, createOrder } from "@/lib/orders";
 import { getSettings } from "@/lib/settings";
+import { z } from "zod";
+import { customerOrderSchema, requireCounterPayment } from "@/lib/checkout";
+import { sendOrderEmail } from "@/lib/order-email";
 
 // POST /api/table/{token}/order — il tavolo è dedotto SOLO dal token segreto del QR.
 export const POST = handle(async (req: Request, { params: pendingParams }: { params: Promise<{ token: string }> }) => {
@@ -12,12 +15,24 @@ export const POST = handle(async (req: Request, { params: pendingParams }: { par
   if (!qr?.active || qr.kind !== "TABLE" || !qr.table?.active) throw new HttpError(404, "QR non valido o disattivato");
   const s = await getSettings();
   if (!s.ordering.tableEnabled) throw new HttpError(403, "Gli ordini dal tavolo sono momentaneamente sospesi");
-  const cart = cartSchema.parse(await req.json());
+  const cart = cartSchema.merge(customerOrderSchema).extend({
+    tableNumber: z.number().int().positive(),
+    payment: z.enum(["AT_COUNTER", "STRIPE"]),
+  }).parse(await req.json());
+  if (cart.tableNumber !== qr.table.number) throw new HttpError(400, "Il numero non corrisponde al tavolo di questo QR");
+  if (!requireCounterPayment(cart.payment)) throw new HttpError(503, "Stripe non è ancora collegato: scegli il pagamento alla cassa.");
+  const customer = await db.customer.upsert({
+    where: { email: cart.email }, update: { name: cart.name, phone: cart.phone },
+    create: { name: cart.name, email: cart.email, phone: cart.phone },
+  });
   let session = await db.tableSession.findFirst({ where: { tableId: qr.tableId!, closedAt: null } });
   session ??= await db.tableSession.create({ data: { tableId: qr.tableId! } });
-  const order = await createOrder(cart, { channel: "TABLE", sessionId: session.id, tableNumber: qr.table.number, paymentMethod: s.ordering.payAtTable ? "AT_TABLE" : "AT_COUNTER" });
+  const order = await createOrder(cart, { channel: "TABLE", sessionId: session.id, tableNumber: qr.table.number, customerId: customer.id, customerName: cart.name, paymentMethod: "AT_COUNTER" });
+  if (!await db.consent.findFirst({ where: { customerId: customer.id, kind: "privacy", source: `ordine:${order.id}` } }))
+    await db.consent.create({ data: { customerId: customer.id, kind: "privacy", granted: true, source: `ordine:${order.id}`, textVersion: "privacy-ordini-1" } });
+  const notification = await sendOrderEmail(order.id);
   // Il token d'accesso allo stato ordine è l'id ordine (cuid non indovinabile) + token tavolo.
-  return NextResponse.json({ id: order.id, number: order.number });
+  return NextResponse.json({ id: order.id, number: order.number, emailStatus: notification?.status ?? "not_available" });
 });
 
 // GET — ordini della sessione aperta del tavolo (stato visibile al cliente).

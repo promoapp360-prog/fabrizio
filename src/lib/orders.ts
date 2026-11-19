@@ -22,9 +22,14 @@ export type Cart = z.infer<typeof cartSchema>;
  * Crea un ordine ricalcolando TUTTI i prezzi dal database (il client non decide i prezzi).
  * Idempotente: stesso idempotencyKey → restituisce l'ordine già creato.
  */
-export async function createOrder(cart: Cart, ctx: { channel: "TABLE" | "TAKEAWAY" | "DELIVERY"; sessionId?: string; tableNumber?: number; customerId?: string; pickupAt?: Date; deliveryAddress?: string; paymentMethod?: "AT_TABLE" | "AT_COUNTER" | "STRIPE" | "ON_PICKUP" }) {
+export async function createOrder(cart: Cart, ctx: { channel: "TABLE" | "TAKEAWAY" | "DELIVERY"; sessionId?: string; tableNumber?: number; customerId?: string; customerName?: string; pickupAt?: Date; deliveryAddress?: string; paymentMethod?: "AT_TABLE" | "AT_COUNTER" | "STRIPE" | "ON_PICKUP" }) {
   const existing = await db.order.findUnique({ where: { idempotencyKey: cart.idempotencyKey } });
-  if (existing) return existing;
+  if (existing) {
+    if (existing.channel !== ctx.channel || existing.customerId !== (ctx.customerId ?? null) ||
+      existing.tableNumber !== (ctx.tableNumber ?? null) || existing.sessionId !== (ctx.sessionId ?? null))
+      throw new HttpError(409, "Identificativo ordine già utilizzato. Ricarica la pagina.");
+    return existing;
+  }
   const settings = await getSettings();
 
   const products = await db.product.findMany({
@@ -62,7 +67,7 @@ export async function createOrder(cart: Cart, ctx: { channel: "TABLE" | "TAKEAWA
 
   try {
     return await db.order.create({
-      data: { channel: ctx.channel, sessionId: ctx.sessionId, tableNumber: ctx.tableNumber, customerId: ctx.customerId, notes: cart.notes,
+      data: { channel: ctx.channel, sessionId: ctx.sessionId, tableNumber: ctx.tableNumber, customerId: ctx.customerId, customerName: ctx.customerName, notes: cart.notes,
         pickupAt: ctx.pickupAt, deliveryAddress: ctx.deliveryAddress, paymentMethod: ctx.paymentMethod,
         estimatedCents: total, finalCents: hasWeighted ? null : total, hasWeighted, idempotencyKey: cart.idempotencyKey,
         items: { create: items }, events: { create: { status: "RECEIVED" } } },
@@ -70,7 +75,9 @@ export async function createOrder(cart: Cart, ctx: { channel: "TABLE" | "TAKEAWA
   } catch (e: unknown) {
     // Doppio click simultaneo: il vincolo unique su idempotencyKey vince, restituiamo l'ordine esistente.
     const dup = await db.order.findUnique({ where: { idempotencyKey: cart.idempotencyKey } });
-    if (dup) return dup; throw e;
+    if (dup && dup.customerId === (ctx.customerId ?? null) && dup.channel === ctx.channel &&
+      dup.tableNumber === (ctx.tableNumber ?? null) && dup.sessionId === (ctx.sessionId ?? null)) return dup;
+    throw e;
   }
 }
 

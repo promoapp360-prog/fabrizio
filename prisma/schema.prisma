@@ -418,6 +418,7 @@ model Order {
   tableNumber    Int?
   customerId     String?
   customer       Customer?     @relation(fields: [customerId], references: [id])
+  customerName   String?       // nome dell'ordinante/al ritiro, conservato con l'ordine
   notes          String?
   pickupAt       DateTime?
   deliveryAddress String?

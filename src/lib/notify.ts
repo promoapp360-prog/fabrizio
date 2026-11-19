@@ -1,16 +1,31 @@
 import { db } from "./db";
+import nodemailer from "nodemailer";
+import { createHash } from "node:crypto";
 /**
  * Invio notifiche. Se il canale non è configurato la notifica viene registrata come
  * "skipped_not_configured" — nessun invio simulato.
  */
-export async function notify(n: { channel: "email" | "whatsapp" | "internal"; to: string; subject?: string; body: string; customerId?: string }) {
-  const rec = await db.notification.create({ data: { ...n, status: "queued" } });
+export async function notify(n: { channel: "email" | "whatsapp" | "internal"; to: string; subject?: string; body: string; customerId?: string; key?: string }) {
+  const { key, ...data } = n;
+  const rec = key
+    ? await db.notification.upsert({ where: { id: notificationId(key) }, create: { id: notificationId(key), ...data, status: "queued" }, update: {} })
+    : await db.notification.create({ data: { ...data, status: "queued" } });
+  if (rec.status === "sent" || rec.status === "sending") return rec;
   try {
     if (n.channel === "internal") return db.notification.update({ where: { id: rec.id }, data: { status: "sent" } });
     if (n.channel === "email") {
-      if (!process.env.SMTP_HOST) return db.notification.update({ where: { id: rec.id }, data: { status: "skipped_not_configured" } });
-      // Implementazione SMTP: aggiungere `nodemailer` (npm i nodemailer) e inviare qui.
-      return db.notification.update({ where: { id: rec.id }, data: { status: "skipped_not_configured", error: "Adapter SMTP da attivare (nodemailer)" } });
+      if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASSWORD || !process.env.MAIL_FROM)
+        return db.notification.update({ where: { id: rec.id }, data: { status: "skipped_not_configured", error: "Servizio email non ancora collegato" } });
+      const claimed = await db.notification.updateMany({ where: { id: rec.id, status: { notIn: ["sent", "sending"] } }, data: { status: "sending", error: null } });
+      if (!claimed.count) return db.notification.findUniqueOrThrow({ where: { id: rec.id } });
+      const port = Number(process.env.SMTP_PORT || 587);
+      const transport = nodemailer.createTransport({
+        host: process.env.SMTP_HOST, port, secure: port === 465, requireTLS: port !== 465,
+        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD },
+        connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000,
+      });
+      await transport.sendMail({ from: process.env.MAIL_FROM, to: n.to, subject: n.subject, text: n.body });
+      return db.notification.update({ where: { id: rec.id }, data: { status: "sent", error: null } });
     }
     if (!process.env.WHATSAPP_CLOUD_TOKEN || !process.env.WHATSAPP_PHONE_NUMBER_ID)
       return db.notification.update({ where: { id: rec.id }, data: { status: "skipped_not_configured" } });
@@ -20,6 +35,11 @@ export async function notify(n: { channel: "email" | "whatsapp" | "internal"; to
     });
     return db.notification.update({ where: { id: rec.id }, data: { status: r.ok ? "sent" : "failed", error: r.ok ? null : await r.text() } });
   } catch (e) {
-    return db.notification.update({ where: { id: rec.id }, data: { status: "failed", error: String(e) } });
+    // Do not retain SMTP responses that could contain credentials or customer data.
+    return db.notification.update({ where: { id: rec.id }, data: { status: "failed", error: "Invio non riuscito. Verificare il servizio di invio." } });
   }
+}
+
+export function notificationId(key: string) {
+  return `mail_${createHash("sha256").update(key).digest("hex").slice(0, 40)}`;
 }

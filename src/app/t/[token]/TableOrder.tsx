@@ -6,28 +6,32 @@ import MenuBrowser, { type CartLine } from "@/components/public/MenuBrowser";
 import CartPanel from "@/components/public/CartPanel";
 import type { MenuData } from "@/lib/menu";
 import { formatEUR } from "@/lib/pricing";
+import OrderDetails, { emptyOrderDetails } from "@/components/public/OrderDetails";
+import { customerOrderSchema } from "@/lib/checkout";
 
 const LABEL: Record<string, string> = { RECEIVED: "Ricevuto", CONFIRMED: "Confermato", PREPARING: "In preparazione", READY: "Pronto", SERVED: "Servito", CANCELLED: "Annullato" };
 type O = { id: string; number: number; status: string; estimatedCents: number; finalCents: number | null; hasWeighted: boolean; items: { nameSnapshot: string; quantity: number }[] };
 
-export default function TableOrder({ token, tableLabel, menu, cooking, orderingOn, logo }: { token: string; tableLabel: string | null; menu: MenuData; cooking: string[]; orderingOn: boolean; logo: string }) {
+export default function TableOrder({ token, tableLabel, tableNumber, menu, cooking, orderingOn, logo }: { token: string; tableLabel: string | null; tableNumber?: number; menu: MenuData; cooking: string[]; orderingOn: boolean; logo: string }) {
   useMenuRefresh();
   const [cart, setCart] = useState<CartLine[]>([]); const [notes, setNotes] = useState(""); const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null); const [orders, setOrders] = useState<O[]>([]); const [tab, setTab] = useState<"menu" | "cart" | "status">("menu");
   // Chiave idempotenza: rigenerata solo dopo un invio riuscito → doppio tap = un solo ordine.
   const [idem, setIdem] = useState(() => crypto.randomUUID());
+  const [details, setDetails] = useState(() => emptyOrderDetails(tableNumber));
 
   const refresh = useCallback(async () => { if (!tableLabel) return; const r = await fetch(`/api/table/${token}/order`); if (r.ok) setOrders((await r.json()).orders); }, [token, tableLabel]);
   useEffect(() => { refresh(); const t = setInterval(refresh, 8000); return () => clearInterval(t); }, [refresh]);
 
   async function submit() {
+    if (!customerOrderSchema.safeParse(details).success) { setMsg({ ok: false, text: "Inserisci nome, email e telefono e accetta l’informativa privacy." }); return; }
     setBusy(true); setMsg(null);
     try {
       const r = await fetch(`/api/table/${token}/order`, { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idempotencyKey: idem, notes: notes || undefined, items: cart.map(l => ({ productId: l.productId, quantity: l.quantity, cooking: l.cooking, optionIds: l.optionIds, notes: l.notes })) }) });
+        body: JSON.stringify({ ...details, tableNumber: Number(details.tableNumber), payment: "AT_COUNTER", idempotencyKey: idem, notes: notes || undefined, items: cart.map(l => ({ productId: l.productId, quantity: l.quantity, cooking: l.cooking, optionIds: l.optionIds, notes: l.notes })) }) });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error ?? "Errore");
-      setCart([]); setNotes(""); setIdem(crypto.randomUUID()); setMsg({ ok: true, text: `Ordine n° ${j.number} inviato!` }); setTab("status"); refresh();
+      setCart([]); setNotes(""); setIdem(crypto.randomUUID()); setMsg({ ok: true, text: `Ordine n° ${j.number} inviato. ${j.emailStatus === "sent" ? "Conferma email inviata." : "Invio email non ancora disponibile: conserva il numero d’ordine."}` }); setTab("status"); refresh();
     } catch (e) { setMsg({ ok: false, text: e instanceof Error ? e.message : "Connessione assente, riprova" }); }
     finally { setBusy(false); }
   }
@@ -40,7 +44,7 @@ export default function TableOrder({ token, tableLabel, menu, cooking, orderingO
       {menuNotice && <p role="status" className="my-3 rounded-lg border border-gold/30 p-3 text-sm">{menuNotice}</p>}
       {msg && <p role="status" className={`my-3 rounded-xl p-3 ${msg.ok ? "bg-gold text-ink" : "bg-red-900/60"}`}>{msg.text}</p>}
       {tab === "menu" && <MenuBrowser menu={menu} cooking={cooking} cartEnabled={orderingOn} cart={cart} liveRefresh={false} onCartChange={c => { setCart(c); setMsg(null); }} />}
-      {tab === "cart" && <div className="mt-4"><CartPanel cart={cart} setCart={setCart} notes={notes} setNotes={setNotes} onSubmit={submit} busy={busy} /></div>}
+      {tab === "cart" && <div className="mt-4"><CartPanel cart={cart} setCart={setCart} notes={notes} setNotes={setNotes} onSubmit={submit} busy={busy} cta="Conferma ordine · paga alla cassa"><OrderDetails value={details} onChange={setDetails} channel="TABLE" fixedTable /></CartPanel></div>}
       {tab === "status" && <div className="mt-4 space-y-3">{!orders.length && <p className="text-cream/60">Nessun ordine ancora inviato da questo tavolo.</p>}
         {orders.map(o => <div key={o.id} className="card"><div className="flex justify-between"><b className="font-display uppercase">Ordine n° {o.number}</b><span className="text-gold">{LABEL[o.status]}</span></div>
           <p className="mt-1 text-sm text-cream/60">{o.items.map(i => `${i.quantity}× ${i.nameSnapshot}`).join(", ")}</p>

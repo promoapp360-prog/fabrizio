@@ -1,9 +1,9 @@
 "use client";
 import { formatEUR } from "@/lib/pricing";
 import type { CartLine } from "./MenuBrowser";
-export default function CartPanel({ cart, setCart, notes, setNotes, onSubmit, busy, children, cta = "Invia ordine" }:
-  { cart: CartLine[]; setCart: (c: CartLine[]) => void; notes: string; setNotes: (s: string) => void; onSubmit: () => void; busy: boolean; children?: React.ReactNode; cta?: string }) {
-  const total = cart.reduce((s, l) => s + l.estCents, 0); const weighted = cart.some(l => l.weighted);
+export default function CartPanel({ cart, setCart, notes, setNotes, onSubmit, busy, children, cta = "Invia ordine", feeCents = 0 }:
+  { cart: CartLine[]; setCart: (c: CartLine[]) => void; notes: string; setNotes: (s: string) => void; onSubmit: () => void; busy: boolean; children?: React.ReactNode; cta?: string; feeCents?: number }) {
+  const total = cart.reduce((s, l) => s + l.estCents, 0) + feeCents; const weighted = cart.some(l => l.weighted);
   return (
     <div className="card">
       <h2 className="text-xl">Il tuo ordine</h2>

@@ -37,7 +37,7 @@ export default function OrdersBoard({ mode, canPay, orderingOn }: { mode: "floor
         <article key={o.id} className={`ticket card break-inside-avoid ${o.status === "RECEIVED" ? "border-gold" : ""}`}>
           <header className="flex items-start justify-between border-b border-dashed border-cream/20 pb-2">
             <div><p className={`font-display uppercase ${mode === "kitchen" ? "text-3xl" : "text-xl"}`}>{o.tableNumber ? `Tavolo ${o.tableNumber}` : CH[o.channel]}</p>
-              <p className="text-xs text-cream/60">#{o.number} · {new Date(o.createdAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}{o.pickupAt && ` · per le ${new Date(o.pickupAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}`}{o.customer && ` · ${o.customer.name} ${o.customer.phone ?? ""}`}</p></div>
+              <p className="text-xs text-cream/60">#{o.number} · {new Date(o.createdAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}{o.pickupAt && ` · per le ${new Date(o.pickupAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}`}{o.customer && ` · ${o.channel === "TAKEAWAY" ? "Ritiro: " : ""}${o.customerName || o.customer.name} ${o.customer.phone ?? ""}`}</p></div>
             <span className="rounded bg-gold/20 px-2 py-1 text-xs text-gold">{L[o.status]}</span></header>
           <ul className={`my-3 space-y-2 ${mode === "kitchen" ? "text-lg" : "text-sm"}`}>{o.items.map((i: any) => (
             <li key={i.id}><b>{i.quantity}× {i.nameSnapshot}</b>{i.cooking && <span className="ml-2 rounded bg-gold px-1.5 text-ink">{i.cooking}</span>}
@@ -53,9 +53,10 @@ export default function OrdersBoard({ mode, canPay, orderingOn }: { mode: "floor
             {(NEXT[o.status] ?? []).filter(s => mode === "floor" || ["PREPARING", "READY"].includes(s)).map(s => (
               <button key={s} onClick={() => (s !== "CANCELLED" || confirm("Annullare l'ordine?")) && act(o.id, { action: "status", status: s })} className={s === "CANCELLED" ? "btn !px-3 !py-1.5 text-xs text-red-400" : "btn-gold !px-4 !py-1.5 text-sm"}>{L[s]}</button>))}
             <button className="btn !px-3 !py-1.5 text-xs border border-cream/20" onClick={() => printTicket(o)}>Stampa</button>
+            {mode === "floor" && <button className="btn !px-3 !py-1.5 text-xs border border-cream/20" onClick={async () => { try { const r = await api(`/api/admin/orders/${o.id}`, "PATCH", { action: "retryEmail" }); alert(r.status === "sent" ? "Conferma email inviata (nessun duplicato se già inviata)." : r.status === "skipped_not_configured" ? "Servizio email non ancora configurato." : "Invio non riuscito o in corso. Controlla le comunicazioni del cliente."); } catch { alert("Impossibile inviare l’email."); } }}>Invia conferma email</button>}
             {mode === "floor" && canPay && o.hasWeighted && o.finalCents == null && <button className="btn-ghost !px-3 !py-1.5 text-xs" onClick={() => confirm("Il cliente ha confermato l'importo definitivo?") && act(o.id, { action: "confirmFinal" })}>Conferma importo</button>}
             {mode === "floor" && canPay && o.finalCents != null && !o.payments?.some((p: any) => p.status === "PAID") && (
-              <button className="btn-ghost !px-3 !py-1.5 text-xs" onClick={() => { const m = prompt("Metodo: AT_TABLE / AT_COUNTER / ON_PICKUP", "AT_COUNTER"); if (m) act(o.id, { action: "payment", method: m, amountCents: o.finalCents }); }}>Registra pagamento</button>)}
+              <button className="btn-ghost !px-3 !py-1.5 text-xs" onClick={() => { if (confirm(`Confermi di avere incassato ${formatEUR(o.finalCents)} alla cassa?`)) act(o.id, { action: "payment", method: o.channel === "TABLE" ? "AT_COUNTER" : "ON_PICKUP", amountCents: o.finalCents }); }}>Registra pagamento in cassa</button>)}
           </div>
         </article>))}
       {!list.length && <p className="text-cream/50">Nessun ordine.</p>}
