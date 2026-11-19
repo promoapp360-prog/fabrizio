@@ -72,10 +72,13 @@ export default function Header({ logo, name, orderOnline }: { logo: string; name
         </button>
       </div>
       {open && (
-        <nav ref={menu} id="mnav" className="mobile-nav-panel border-t border-cream/10 bg-ink lg:hidden" aria-label="Mobile">
-          {NAV.map(([h, l]) => <Link key={h} href={h} onClick={() => setOpen(false)} className="mobile-nav-link" aria-current={pathname === h ? "page" : undefined}>{l}</Link>)}
-          {orderOnline && <Link href="/ordina" onClick={() => setOpen(false)} className="mobile-nav-link" aria-current={pathname === "/ordina" ? "page" : undefined}>Ordina</Link>}
-        </nav>
+        <>
+          <button type="button" className="mobile-nav-backdrop" aria-label="Chiudi menu" onClick={() => setOpen(false)} />
+          <nav ref={menu} id="mnav" className="mobile-nav-panel border-t border-cream/10 bg-ink lg:hidden" aria-label="Mobile">
+            {NAV.map(([h, l]) => <Link key={h} href={h} onClick={() => setOpen(false)} className="mobile-nav-link" aria-current={pathname === h ? "page" : undefined}>{l}</Link>)}
+            {orderOnline && <Link href="/ordina" onClick={() => setOpen(false)} className="mobile-nav-link" aria-current={pathname === "/ordina" ? "page" : undefined}>Ordina</Link>}
+          </nav>
+        </>
       )}
     </header>
   );
