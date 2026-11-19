@@ -51,7 +51,7 @@ h1, h2, h3, .display { @apply font-display uppercase tracking-tight; }
   .restaurant-hero { height: auto; aspect-ratio: 1024 / 539; min-height: 520px; max-height: 880px; }
   .restaurant-hero picture img { object-fit: cover; }
   .restaurant-hero-shade { background: linear-gradient(90deg,rgba(10,10,8,.65),rgba(10,10,8,.35) 48%,rgba(10,10,8,.03) 72%); }
-  .restaurant-hero-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 52%; padding-top: 0; animation: none; }
+  .restaurant-hero-content { position: absolute; top: 37%; left: 50%; transform: translate(-50%,-50%); width: 52%; padding-top: 0; animation: none; }
   .hero-mark { height: clamp(85px,8vw,130px); }
   .hero-name { margin-top: 12px; font-size: clamp(2.75rem,5.5vw,5rem); font-weight: 400; }
   .hero-location { margin-top: 8px; font-size: 14px; line-height: 20px; letter-spacing: .5em; padding-left: 0; }
