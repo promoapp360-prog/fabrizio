@@ -15,7 +15,8 @@ const schema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("payment"), method: z.enum(["AT_TABLE", "AT_COUNTER", "ON_PICKUP"]), amountCents: z.number().int().min(1) }),
 ]);
 
-export const PATCH = handle(async (req: Request, { params }: { params: { id: string } }) => {
+export const PATCH = handle(async (req: Request, { params: pendingParams }: { params: Promise<{ id: string }> }) => {
+  const params = await pendingParams;
   const user = await requirePermission("orders.view");
   const body = schema.parse(await req.json());
   const order = await db.order.findUniqueOrThrow({ where: { id: params.id }, include: { items: true } });

@@ -6,7 +6,8 @@ import TableOrder from "./TableOrder";
 export const metadata = { title: "Ordina dal tavolo", robots: { index: false } };
 
 // Pagina aperta dal QR: il tavolo è identificato dal token segreto, non da un numero modificabile.
-export default async function TablePage({ params }: { params: { token: string } }) {
+export default async function TablePage({ params: pendingParams }: { params: Promise<{ token: string }> }) {
+  const params = await pendingParams;
   const qr = await db.qrCode.findUnique({ where: { token: params.token }, include: { table: true } });
   const s = await getSettings();
   if (!qr?.active) return <main className="flex min-h-screen items-center justify-center p-6 text-center"><div><img src={s.brand.mark} alt="" className="mx-auto h-20" /><h1 className="mt-6 text-2xl">QR non valido</h1><p className="mt-2 text-cream/60">Questo codice non è più attivo. Chiedi assistenza al personale.</p></div></main>;

@@ -4,7 +4,8 @@ import { guard } from "@/components/admin/Guard";
 import { formatEUR } from "@/lib/pricing";
 import { getSettings } from "@/lib/settings";
 
-export default async function Dashboard({ searchParams }: { searchParams: { denied?: string } }) {
+export default async function Dashboard({ searchParams: pendingSearchParams }: { searchParams: Promise<{ denied?: string }> }) {
+  const searchParams = await pendingSearchParams;
   await guard("dashboard");
   const start = new Date(); start.setHours(0, 0, 0, 0); const end = new Date(start.getTime() + 86400000);
   const [res, tables, openSessions, ordersToday, preparing, received, top, paid, lowStock, unconfirmedWeights, s] = await Promise.all([

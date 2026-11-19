@@ -1,14 +1,14 @@
 /**
  * Imposta (o recupera) la password del Super Admin.
- * Uso: npm run admin:set -- <password>
+ * Uso sicuro: imposta SEED_ADMIN_PASSWORD nei Secrets, poi npm run admin:set.
  * Ignora la lunghezza minima delle Impostazioni: serve anche come recupero d'accesso.
  */
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 const db = new PrismaClient();
 async function main() {
-  const pw = process.argv[2];
-  if (!pw) throw new Error("Uso: npm run admin:set -- <password>");
+  const pw = process.env.SEED_ADMIN_PASSWORD || process.argv[2];
+  if (!pw) throw new Error("Imposta SEED_ADMIN_PASSWORD nei Secrets, poi esegui npm run admin:set");
   const others = await db.user.findMany({ where: { role: { not: "SUPER_ADMIN" } } });
   for (const u of others) if (await bcrypt.compare(pw, u.passwordHash)) throw new Error("Password già usata da un membro dello staff: scegline un'altra");
   const passwordHash = await bcrypt.hash(pw, 12);

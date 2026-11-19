@@ -7,13 +7,15 @@ import { audit } from "@/lib/audit";
 import { saveRelations, splitRelations } from "@/lib/relations";
 import { getRes, model } from "@/lib/resource-db";
 
-export const GET = handle(async (_r: Request, { params }: { params: { resource: string; id: string } }) => {
+export const GET = handle(async (_r: Request, { params: pendingParams }: { params: Promise<{ resource: string; id: string }> }) => {
+  const params = await pendingParams;
   const r = getRes(params.resource); const cfg = RESOURCES[r];
   await requirePermission(cfg.perm);
   return NextResponse.json(await model(r).findUniqueOrThrow({ where: { id: params.id }, include: "include" in cfg ? cfg.include : undefined }));
 });
 
-export const PATCH = handle(async (req: Request, { params }: { params: { resource: string; id: string } }) => {
+export const PATCH = handle(async (req: Request, { params: pendingParams }: { params: Promise<{ resource: string; id: string }> }) => {
+  const params = await pendingParams;
   const r = getRes(params.resource); const cfg = RESOURCES[r];
   const user = await requirePermission(cfg.perm);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -29,7 +31,8 @@ export const PATCH = handle(async (req: Request, { params }: { params: { resourc
   return NextResponse.json(row);
 });
 
-export const DELETE = handle(async (_r: Request, { params }: { params: { resource: string; id: string } }) => {
+export const DELETE = handle(async (_r: Request, { params: pendingParams }: { params: Promise<{ resource: string; id: string }> }) => {
+  const params = await pendingParams;
   const r = getRes(params.resource); const cfg = RESOURCES[r];
   const user = await requirePermission(cfg.perm);
   if (r === "products") {

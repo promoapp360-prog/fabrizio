@@ -4,12 +4,14 @@ import { db } from "@/lib/db";
 import Meter from "@/components/public/Meter";
 import { priceLabel, type PriceMode } from "@/lib/pricing";
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
+export async function generateMetadata({ params: pendingParams }: { params: Promise<{ slug: string }> }) {
+  const params = await pendingParams;
   const b = await db.breed.findUnique({ where: { slug: params.slug } });
   return { title: b?.name ?? "Razza", description: b?.tasting ?? undefined };
 }
 
-export default async function Razza({ params }: { params: { slug: string } }) {
+export default async function Razza({ params: pendingParams }: { params: Promise<{ slug: string }> }) {
+  const params = await pendingParams;
   const b = await db.breed.findUnique({ where: { slug: params.slug }, include: { farmingMethod: true, cuts: { include: { cut: true } }, products: { where: { active: true } } } });
   if (!b || !b.published) notFound();
   const facts: [string, string | null][] = [["Tipologia", b.type], ["Paese di origine", b.country], ["Provenienza", b.region], ["Allevamento", b.farmingMethod?.name ?? null], ["Alimentazione", b.feeding], ["Frollatura e maturazione", b.ageing]];

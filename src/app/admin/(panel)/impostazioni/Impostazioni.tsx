@@ -42,7 +42,7 @@ export default function Impostazioni({ settings, integrations }: { settings: any
         <div className="md:col-span-2"><Save k="ordering" /></div></div>}
       {tab === "sicurezza" && <div className="card space-y-4">
         <T k="security" f="minPasswordLength" l="Lunghezza minima password staff (caratteri)" type="number" />
-        <p className="text-xs text-cream/50">Vale per le nuove password e per i cambi password in Personale. L&apos;accesso è con sola password; dopo 8 tentativi errati l&apos;IP viene bloccato per 15 minuti. Recupero password Super Admin: <code>npm run admin:set -- nuovapassword</code>.</p>
+        <p className="text-xs text-cream/50">Vale per le nuove password e per i cambi password in Personale. L&apos;accesso è con sola password; dopo 8 tentativi errati l&apos;IP viene bloccato per 15 minuti. Recupero Super Admin: imposta SEED_ADMIN_PASSWORD nei Secrets del progetto, poi esegui <code>npm run admin:set</code> senza argomenti.</p>
         <Save k="security" /></div>}
       {tab === "prenotazioni" && <div className="card grid gap-4 md:grid-cols-2">
         <T k="reservations" f="autoConfirm" l="Conferma automatica (se c'è disponibilità)" type="bool" /><T k="reservations" f="durationMin" l="Durata prenotazione (min)" type="number" />

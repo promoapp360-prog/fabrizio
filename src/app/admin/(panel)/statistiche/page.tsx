@@ -9,7 +9,8 @@ function Bars({ data, fmt = (n: number) => String(n) }: { data: { label: string;
     {!data.length && <li className="text-xs text-cream/40">Nessun dato nel periodo</li>}</ul>;
 }
 
-export default async function Stats({ searchParams }: { searchParams: { days?: string } }) {
+export default async function Stats({ searchParams: pendingSearchParams }: { searchParams: Promise<{ days?: string }> }) {
+  const searchParams = await pendingSearchParams;
   await guard("stats");
   const days = Math.min(365, Number(searchParams.days) || 30); const from = new Date(Date.now() - days * 86400000);
   const [orders, items, res, payments, tables, products] = await Promise.all([

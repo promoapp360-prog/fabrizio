@@ -4,12 +4,14 @@ import { db } from "@/lib/db";
 import { ZONES } from "@/components/public/CowMap";
 import { priceLabel, type PriceMode } from "@/lib/pricing";
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
+export async function generateMetadata({ params: pendingParams }: { params: Promise<{ slug: string }> }) {
+  const params = await pendingParams;
   const c = await db.cut.findUnique({ where: { slug: params.slug } });
   return { title: c?.name ?? "Taglio", description: c?.description ?? undefined };
 }
 
-export default async function Taglio({ params }: { params: { slug: string } }) {
+export default async function Taglio({ params: pendingParams }: { params: Promise<{ slug: string }> }) {
+  const params = await pendingParams;
   const c = await db.cut.findUnique({ where: { slug: params.slug }, include: { breeds: { include: { breed: true } }, products: { where: { active: true } } } });
   if (!c || !c.published) notFound();
   const zone = ZONES.find(z => z.id === c.zone);

@@ -27,6 +27,11 @@ Sito pubblico + gestionale per un ristorante di carni alla brace. Un'unica app *
 
 ## Avvio rapido (locale)
 
+Runtime verificato: Node.js 24, Next.js 16.4.6, React 19 e Prisma 5.22.
+Next.js è stato aggiornato su autorizzazione del cliente dopo il blocco di
+sicurezza delle versioni 14.2.18 e 14.2.35; sito, design e accesso staff sono
+quelli del repository originale.
+
 ```bash
 cp .env.example .env          # compila DATABASE_URL, AUTH_SECRET, SEED_ADMIN_PASSWORD
 npm install
@@ -40,10 +45,10 @@ Dopo `db:setup` **committa la cartella `prisma/migrations`**: da lì in poi ogni
 ## Replit
 
 1. Replit → **Create Repl → Import from GitHub** → `promoapp360-prog/fabrizio`.
-2. Tools → **Database** → crea PostgreSQL (persistente; Replit imposta `DATABASE_URL`). In alternativa un Postgres esterno (Neon, Supabase).
+2. Usa esclusivamente il PostgreSQL gestito e dedicato a questo progetto Vecciarì; Replit imposta `DATABASE_URL`. Non collegare database di altri clienti.
 3. Tools → **Secrets**: `AUTH_SECRET` (≥32 caratteri), `PUBLIC_BASE_URL` (URL pubblico, serve ai QR), `SEED_ADMIN_PASSWORD`, `TZ=Europe/Rome`, più S3 per le immagini.
-4. Shell: `npm install && npm run db:setup` → **Run**.
-5. **Deploy** (Autoscale): il build esegue `npm ci && npm run build && npm run db:deploy`.
+4. Shell: `npm install`; se `prisma/migrations` esiste esegui `npm run db:migrate`. Solo sulla prima installazione vuota e senza migrazioni usa `npm run db:setup`. Non resettare database con dati.
+5. **Publish** (Autoscale, porta 3000): nel progetto Replit importato il servizio è configurato dall'adattatore in `artifacts/vecciari/.replit-artifact/artifact.toml`. Il build effettivo esegue `npm ci && npm run build` nella cartella del sito; l'avvio esegue `npm run start`. Replit applica lo schema di produzione nel flusso Publish: non aggiungere `db:deploy`, DDL o migrazioni agli hook di build o avvio. Il `.replit` originale del repository è conservato come parte dell'importazione, ma non è la configurazione effettiva di questo progetto.
 6. Git panel di Replit per commit/push verso GitHub. Replit Agent può modificare il codice: le istruzioni per lui sono in `docs/ARCHITETTURA.md`.
 
 **Mai** salvare immagini o dati sul filesystem di Replit (è effimero): DB su Postgres, file su S3.
@@ -70,7 +75,7 @@ I test 6, 7, 11 e la logica prezzi sono automatizzati; gli altri sono da eseguir
 - Login con **sola password**, nessuna email. Ogni membro dello staff ha una password unica che identifica lui e il suo ruolo.
 - Lunghezza minima delle password: **Admin › Impostazioni › Sicurezza** (decide il Super Admin, da 1 a 30 caratteri).
 - Il Super Admin crea i membri e ne cambia le password da **Admin › Personale**.
-- Impostare o recuperare la password del Super Admin: `npm run admin:set -- nuovapassword`
+- Impostare o recuperare la password del Super Admin: salva `SEED_ADMIN_PASSWORD` nei Secrets del progetto, poi esegui `npm run admin:set` **senza argomenti**. Non mettere password in comandi, file, log o commit.
 - Dopo 8 tentativi errati l'IP viene bloccato per 15 minuti.
 
 ## Documentazione

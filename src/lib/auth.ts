@@ -34,10 +34,10 @@ export async function findUserByPassword(pw: string, excludeId?: string) {
 export async function createSession(u: SessionUser) {
   const token = await new SignJWT({ name: u.name, role: u.role })
     .setProtectedHeader({ alg: "HS256" }).setSubject(u.id).setIssuedAt().setExpirationTime("12h").sign(secret());
-  cookies().set(COOKIE, token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 60 * 60 * 12 });
+  (await cookies()).set(COOKIE, token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 60 * 60 * 12 });
 }
 
-export function destroySession() { cookies().delete(COOKIE); }
+export async function destroySession() { (await cookies()).delete(COOKIE); }
 
 export async function readToken(token?: string): Promise<SessionUser | null> {
   if (!token) return null;
@@ -49,7 +49,7 @@ export async function readToken(token?: string): Promise<SessionUser | null> {
 
 /** Utente corrente, ricontrollato sul DB (utente disattivato = sessione non valida). */
 export async function getUser(): Promise<SessionUser | null> {
-  const u = await readToken(cookies().get(COOKIE)?.value);
+  const u = await readToken((await cookies()).get(COOKIE)?.value);
   if (!u) return null;
   const row = await db.user.findUnique({ where: { id: u.id }, select: { active: true, role: true } });
   if (!row?.active) return null;

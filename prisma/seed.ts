@@ -14,7 +14,7 @@ async function main() {
   const pw = process.env.SEED_ADMIN_PASSWORD;
   if (pw && !(await db.user.findFirst({ where: { role: "SUPER_ADMIN" } })))
     await db.user.create({ data: { name: "Amministratore", role: "SUPER_ADMIN", passwordHash: await bcrypt.hash(pw, 12) } });
-  else if (!pw) console.warn("SEED_ADMIN_PASSWORD non impostata: usa `npm run admin:set -- <password>`");
+  else if (!pw) console.warn("SEED_ADMIN_PASSWORD non impostata: aggiungila nei Secrets, poi usa `npm run admin:set` senza argomenti");
 
   // 14 allergeni Reg. UE 1169/2011
   const AL = [["glutine", "Glutine"], ["crostacei", "Crostacei"], ["uova", "Uova"], ["pesce", "Pesce"], ["arachidi", "Arachidi"], ["soia", "Soia"], ["latte", "Latte"], ["frutta_guscio", "Frutta a guscio"], ["sedano", "Sedano"], ["senape", "Senape"], ["sesamo", "Sesamo"], ["solfiti", "Solfiti"], ["lupini", "Lupini"], ["molluschi", "Molluschi"]];

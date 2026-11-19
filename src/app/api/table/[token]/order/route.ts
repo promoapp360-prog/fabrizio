@@ -5,7 +5,8 @@ import { cartSchema, createOrder } from "@/lib/orders";
 import { getSettings } from "@/lib/settings";
 
 // POST /api/table/{token}/order — il tavolo è dedotto SOLO dal token segreto del QR.
-export const POST = handle(async (req: Request, { params }: { params: { token: string } }) => {
+export const POST = handle(async (req: Request, { params: pendingParams }: { params: Promise<{ token: string }> }) => {
+  const params = await pendingParams;
   rateLimit(`order:${clientIp(req)}`, 10, 60_000);
   const qr = await db.qrCode.findUnique({ where: { token: params.token }, include: { table: true } });
   if (!qr?.active || qr.kind !== "TABLE" || !qr.table?.active) throw new HttpError(404, "QR non valido o disattivato");
@@ -20,7 +21,8 @@ export const POST = handle(async (req: Request, { params }: { params: { token: s
 });
 
 // GET — ordini della sessione aperta del tavolo (stato visibile al cliente).
-export const GET = handle(async (_req: Request, { params }: { params: { token: string } }) => {
+export const GET = handle(async (_req: Request, { params: pendingParams }: { params: Promise<{ token: string }> }) => {
+  const params = await pendingParams;
   const qr = await db.qrCode.findUnique({ where: { token: params.token } });
   if (!qr?.active || !qr.tableId) throw new HttpError(404, "QR non valido");
   const session = await db.tableSession.findFirst({ where: { tableId: qr.tableId, closedAt: null } });
