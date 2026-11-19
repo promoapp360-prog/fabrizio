@@ -18,7 +18,7 @@ export default function Impostazioni({ settings, integrations }: { settings: any
 
   return (<div>
     <h1 className="text-3xl">Impostazioni</h1>
-    <div className="mt-4 flex flex-wrap gap-2">{["generale", "aspetto", "ordini", "prenotazioni", "turni", "integrazioni"].map(t => <button key={t} onClick={() => setTab(t)} className={`rounded-full px-4 py-2 text-sm capitalize ${tab === t ? "bg-gold text-ink" : "border border-cream/20"}`}>{t}</button>)}</div>
+    <div className="mt-4 flex flex-wrap gap-2">{["generale", "aspetto", "ordini", "prenotazioni", "turni", "sicurezza", "integrazioni"].map(t => <button key={t} onClick={() => setTab(t)} className={`rounded-full px-4 py-2 text-sm capitalize ${tab === t ? "bg-gold text-ink" : "border border-cream/20"}`}>{t}</button>)}</div>
     {msg && <p className="mt-3 text-gold" role="status">{msg}</p>}
     <div className="mt-6 max-w-3xl">
       {tab === "generale" && <div className="card grid gap-4 md:grid-cols-2">
@@ -40,6 +40,10 @@ export default function Impostazioni({ settings, integrations }: { settings: any
         <T k="ordering" f="prepMinutes" l="Preavviso minimo asporto (min)" type="number" /><T k="ordering" f="deliveryMinCents" l="Minimo consegna €" type="money" /><T k="ordering" f="deliveryFeeCents" l="Costo consegna €" type="money" />
         <T k="ordering" f="deliveryZones" l="Zone di consegna (testo)" />
         <div className="md:col-span-2"><Save k="ordering" /></div></div>}
+      {tab === "sicurezza" && <div className="card space-y-4">
+        <T k="security" f="minPasswordLength" l="Lunghezza minima password staff (caratteri)" type="number" />
+        <p className="text-xs text-cream/50">Vale per le nuove password e per i cambi password in Personale. L&apos;accesso è con sola password; dopo 8 tentativi errati l&apos;IP viene bloccato per 15 minuti. Recupero password Super Admin: <code>npm run admin:set -- nuovapassword</code>.</p>
+        <Save k="security" /></div>}
       {tab === "prenotazioni" && <div className="card grid gap-4 md:grid-cols-2">
         <T k="reservations" f="autoConfirm" l="Conferma automatica (se c'è disponibilità)" type="bool" /><T k="reservations" f="durationMin" l="Durata prenotazione (min)" type="number" />
         <T k="reservations" f="maxPartyOnline" l="Max persone prenotabili online" type="number" /><T k="reservations" f="minNoticeMin" l="Preavviso minimo (min)" type="number" />

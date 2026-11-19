@@ -28,7 +28,7 @@ Sito pubblico + gestionale per un ristorante di carni alla brace. Un'unica app *
 ## Avvio rapido (locale)
 
 ```bash
-cp .env.example .env          # compila DATABASE_URL, AUTH_SECRET, SEED_ADMIN_*
+cp .env.example .env          # compila DATABASE_URL, AUTH_SECRET, SEED_ADMIN_PASSWORD
 npm install
 npm run db:setup              # crea la prima migrazione + dati demo + Super Admin
 npm run dev                   # http://localhost:3000  ·  gestionale: /admin
@@ -41,7 +41,7 @@ Dopo `db:setup` **committa la cartella `prisma/migrations`**: da lì in poi ogni
 
 1. Replit → **Create Repl → Import from GitHub** → `promoapp360-prog/fabrizio`.
 2. Tools → **Database** → crea PostgreSQL (persistente; Replit imposta `DATABASE_URL`). In alternativa un Postgres esterno (Neon, Supabase).
-3. Tools → **Secrets**: `AUTH_SECRET` (≥32 caratteri), `PUBLIC_BASE_URL` (URL pubblico, serve ai QR), `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `TZ=Europe/Rome`, più S3 per le immagini.
+3. Tools → **Secrets**: `AUTH_SECRET` (≥32 caratteri), `PUBLIC_BASE_URL` (URL pubblico, serve ai QR), `SEED_ADMIN_PASSWORD`, `TZ=Europe/Rome`, più S3 per le immagini.
 4. Shell: `npm install && npm run db:setup` → **Run**.
 5. **Deploy** (Autoscale): il build esegue `npm ci && npm run build && npm run db:deploy`.
 6. Git panel di Replit per commit/push verso GitHub. Replit Agent può modificare il codice: le istruzioni per lui sono in `docs/ARCHITETTURA.md`.
@@ -65,6 +65,13 @@ Dopo `db:setup` **committa la cartella `prisma/migrations`**: da lì in poi ogni
 | 12 | Persistenza dopo riavvio | Dati su Postgres, media su S3: riavvia il Repl e verifica |
 
 I test 6, 7, 11 e la logica prezzi sono automatizzati; gli altri sono da eseguire a mano sull'app avviata (servono DB e browser).
+
+## Accesso area staff
+- Login con **sola password**, nessuna email. Ogni membro dello staff ha una password unica che identifica lui e il suo ruolo.
+- Lunghezza minima delle password: **Admin › Impostazioni › Sicurezza** (decide il Super Admin, da 1 a 30 caratteri).
+- Il Super Admin crea i membri e ne cambia le password da **Admin › Personale**.
+- Impostare o recuperare la password del Super Admin: `npm run admin:set -- nuovapassword`
+- Dopo 8 tentativi errati l'IP viene bloccato per 15 minuti.
 
 ## Documentazione
 - `docs/ARCHITETTURA.md` — struttura, sicurezza, come estendere

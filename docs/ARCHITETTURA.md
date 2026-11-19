@@ -4,7 +4,7 @@
 src/
   app/(site)/        sito pubblico (server components, dati letti dal DB a ogni richiesta)
   app/t/[token]/     menu + ordine al tavolo da QR
-  app/admin/         gestionale (login, reset, (panel)/* sezioni)
+  app/admin/         gestionale (login, (panel)/* sezioni)
   app/api/           API: pubbliche (ordini tavolo, prenotazioni, ordini online) e /api/admin/*
   components/        public/ e admin/ (ResourceManager = CRUD generico)
   lib/               logica: auth, rbac, orders, pricing, availability, settings, notify, storage
@@ -14,7 +14,7 @@ tests/               test logica pura
 ```
 
 ## Sicurezza
-- **Autenticazione**: password bcrypt (12 round), policy min 10 caratteri lettere+numeri, JWT HS256 in cookie httpOnly/secure/sameSite, scadenza 12h, utente ricontrollato sul DB a ogni richiesta (disattivazione immediata), reset via token monouso 1h, rate-limit login.
+- **Autenticazione**: accesso con sola password (nessuna email per lo staff). Password bcrypt (12 round), uniche tra gli utenti (verificato alla creazione/modifica), lunghezza minima configurabile dal Super Admin (Impostazioni › Sicurezza). JWT HS256 in cookie httpOnly/secure/sameSite, scadenza 12h, utente ricontrollato sul DB a ogni richiesta (disattivazione immediata). Blocco IP dopo 8 tentativi errati in 15 minuti. Recupero Super Admin: `npm run admin:set -- <password>`.
 - **Autorizzazione**: `src/lib/rbac.ts` definisce i permessi per ruolo; ogni pagina usa `guard()` e ogni API `requirePermission()` — non basta nascondere i menu.
 - **Ordini tavolo**: il tavolo è identificato da un token casuale da 144 bit nel QR, rigenerabile/disattivabile. I prezzi sono sempre ricalcolati sul server. `idempotencyKey` unica impedisce ordini doppi. Cambi di stato con controllo concorrenza (update condizionato) e flusso stati vincolato.
 - **Prenotazioni**: transazione `Serializable` + verifica capienza → nessun overbooking da richieste concorrenti.

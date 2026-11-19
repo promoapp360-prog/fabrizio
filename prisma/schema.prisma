@@ -16,13 +16,10 @@ enum StockMoveType { LOAD SALE ADJUSTMENT WASTE }
 // ── Utenti e audit ──────────────────────────────────────
 model User {
   id           String    @id @default(cuid())
-  email        String    @unique
   name         String
-  passwordHash String
+  passwordHash String    // accesso con sola password: deve essere unica tra gli utenti
   role         Role
   active       Boolean   @default(true)
-  resetToken   String?   @unique
-  resetExpires DateTime?
   createdAt    DateTime  @default(now())
   lastLoginAt  DateTime?
   auditLogs    AuditLog[]
@@ -43,7 +40,7 @@ model AuditLog {
 
 // ── Impostazioni e CMS ──────────────────────────────────
 model Setting {
-  key       String   @id   // es. "brand", "contacts", "ordering", "reservations", "seo"
+  key       String   @id   // es. "brand", "contacts", "ordering", "reservations", "seo", "security"
   value     Json
   updatedAt DateTime @updatedAt
 }

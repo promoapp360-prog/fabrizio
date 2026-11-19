@@ -10,11 +10,11 @@ const db = new PrismaClient();
 
 async function main() {
   // Super Admin
-  const email = process.env.SEED_ADMIN_EMAIL?.toLowerCase(); const pw = process.env.SEED_ADMIN_PASSWORD;
-  if (email && pw) {
-    if (pw.length < 10) throw new Error("SEED_ADMIN_PASSWORD deve avere almeno 10 caratteri");
-    await db.user.upsert({ where: { email }, update: {}, create: { email, name: "Amministratore", role: "SUPER_ADMIN", passwordHash: await bcrypt.hash(pw, 12) } });
-  } else console.warn("SEED_ADMIN_EMAIL/SEED_ADMIN_PASSWORD non impostate: nessun admin creato");
+  // Super Admin (accesso con sola password). Creato solo se non esiste già.
+  const pw = process.env.SEED_ADMIN_PASSWORD;
+  if (pw && !(await db.user.findFirst({ where: { role: "SUPER_ADMIN" } })))
+    await db.user.create({ data: { name: "Amministratore", role: "SUPER_ADMIN", passwordHash: await bcrypt.hash(pw, 12) } });
+  else if (!pw) console.warn("SEED_ADMIN_PASSWORD non impostata: usa `npm run admin:set -- <password>`");
 
   // 14 allergeni Reg. UE 1169/2011
   const AL = [["glutine", "Glutine"], ["crostacei", "Crostacei"], ["uova", "Uova"], ["pesce", "Pesce"], ["arachidi", "Arachidi"], ["soia", "Soia"], ["latte", "Latte"], ["frutta_guscio", "Frutta a guscio"], ["sedano", "Sedano"], ["senape", "Senape"], ["sesamo", "Sesamo"], ["solfiti", "Solfiti"], ["lupini", "Lupini"], ["molluschi", "Molluschi"]];

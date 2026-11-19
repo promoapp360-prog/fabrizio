@@ -8,6 +8,7 @@ export const DEFAULTS = {
   ordering: { tableEnabled: true, takeawayEnabled: false, deliveryEnabled: false, payAtTable: true, payAtCounter: true, stripeEnabled: false, payTiming: "END" as "END" | "ADVANCE",
     prepMinutes: 30, deliveryMinCents: 3000, deliveryFeeCents: 300, deliveryZones: "" },
   reservations: { autoConfirm: false, durationMin: 120, maxPartyOnline: 10, minNoticeMin: 60 },
+  security: { minPasswordLength: 4 },
   seo: { title: "Vecciarì — Grano & Brace", description: "Ristorante di carni selezionate alla brace." },
   cooking: ["Al sangue", "Media-al sangue", "Media", "Media-ben cotta", "Ben cotta"],
 };

@@ -11,7 +11,7 @@ Tutte JSON. Errori: `{ "error": "messaggio" }` con status 400/401/403/404/409/42
 | GET | `/api/table/{token}/order` | ordini della sessione tavolo aperta |
 | POST | `/api/online-order` | carrello + `{channel,pickupAt,name,phone,email?,address?,privacy,payment}` |
 | GET | `/api/order/{id}` | stato ordine |
-| POST | `/api/auth/login` · `/api/auth/logout` · `/api/auth/reset` | |
+| POST | `/api/auth/login` `{password}` · `/api/auth/logout` | accesso staff con sola password |
 
 ## Admin (sessione + permesso)
 | Metodo | Percorso | Permesso |

@@ -4,7 +4,7 @@ import { jwtVerify } from "jose";
 // verificati di nuovo in ogni pagina/route server (requirePermission).
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  if (pathname === "/admin/login" || pathname.startsWith("/admin/reset")) return NextResponse.next();
+  if (pathname === "/admin/login") return NextResponse.next();
   const token = req.cookies.get("vc_session")?.value;
   try {
     if (!token) throw 0;
