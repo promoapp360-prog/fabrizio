@@ -1,0 +1,19 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { jwtVerify } from "jose";
+// Primo filtro: /admin richiede una sessione valida. I permessi per sezione sono
+// verificati di nuovo in ogni pagina/route server (requirePermission).
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+  if (pathname === "/admin/login" || pathname.startsWith("/admin/reset")) return NextResponse.next();
+  const token = req.cookies.get("vc_session")?.value;
+  try {
+    if (!token) throw 0;
+    await jwtVerify(token, new TextEncoder().encode(process.env.AUTH_SECRET));
+    return NextResponse.next();
+  } catch {
+    if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
+    const url = req.nextUrl.clone(); url.pathname = "/admin/login"; url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
+}
+export const config = { matcher: ["/admin/:path*", "/api/admin/:path*"] };

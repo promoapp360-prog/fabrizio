@@ -1,0 +1,454 @@
+// Vecciarì — Grano & Brace · schema database (PostgreSQL)
+// Importi in centesimi (Int) per evitare errori di arrotondamento.
+generator client { provider = "prisma-client-js" }
+datasource db { provider = "postgresql"; url = env("DATABASE_URL") }
+
+enum Role { SUPER_ADMIN MANAGER WAITER KITCHEN }
+enum PriceMode { FIXED PER_KG PER_HG PER_PORTION }
+enum OrderChannel { TABLE TAKEAWAY DELIVERY }
+enum OrderStatus { RECEIVED CONFIRMED PREPARING READY SERVED CANCELLED }
+enum PaymentMethod { AT_TABLE AT_COUNTER STRIPE ON_PICKUP }
+enum PaymentStatus { PENDING PAID REFUNDED FAILED }
+enum ReservationStatus { PENDING CONFIRMED CANCELLED SEATED NO_SHOW COMPLETED WAITLIST }
+enum ContentStatus { DRAFT PUBLISHED }
+enum StockMoveType { LOAD SALE ADJUSTMENT WASTE }
+
+// ── Utenti e audit ──────────────────────────────────────
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  role         Role
+  active       Boolean   @default(true)
+  resetToken   String?   @unique
+  resetExpires DateTime?
+  createdAt    DateTime  @default(now())
+  lastLoginAt  DateTime?
+  auditLogs    AuditLog[]
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  data      Json?
+  createdAt DateTime @default(now())
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+// ── Impostazioni e CMS ──────────────────────────────────
+model Setting {
+  key       String   @id   // es. "brand", "contacts", "ordering", "reservations", "seo"
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model Page {
+  id        String        @id @default(cuid())
+  slug      String        @unique // "home", "ristorante", "privacy", "cookie"
+  title     String
+  seoTitle  String?
+  seoDesc   String?
+  sections  Section[]
+  updatedAt DateTime      @updatedAt
+}
+
+model Section {
+  id         String        @id @default(cuid())
+  pageId     String
+  page       Page          @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  type       String        // hero, philosophy, meats, cuts, menuPreview, quality, gallery, reviews, contacts, richtext
+  position   Int
+  enabled    Boolean       @default(true)
+  status     ContentStatus @default(PUBLISHED)
+  content    Json          // contenuto pubblicato
+  draft      Json?         // bozza non ancora pubblicata
+  updatedAt  DateTime      @updatedAt
+  @@index([pageId, position])
+}
+
+model Media {
+  id        String   @id @default(cuid())
+  url       String
+  key       String?  // chiave S3
+  alt       String   @default("")
+  mime      String
+  width     Int?
+  height    Int?
+  gallery   String?  // nome galleria
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+// ── Mondo della carne ───────────────────────────────────
+model FarmingMethod {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        String  // grass-fed, grain-fed, pascolo…
+  description String
+  breeds      Breed[]
+}
+
+model Breed {
+  id              String         @id @default(cuid())
+  slug            String         @unique
+  name            String
+  type            String?
+  country         String?
+  region          String?
+  farmingMethodId String?
+  farmingMethod   FarmingMethod? @relation(fields: [farmingMethodId], references: [id])
+  feeding         String?
+  tasting         String?
+  marbling        Int?           // 1-5 scala descrittiva
+  tenderness      Int?
+  flavour         Int?
+  ageing          String?
+  certifications  String?        // solo se documentate dal ristoratore
+  certVerified    Boolean        @default(false)
+  body            String?        // approfondimento
+  images          String[]
+  videoUrl        String?
+  available       Boolean        @default(false) // disponibilità confermata dal ristoratore
+  isDemo          Boolean        @default(false)
+  published       Boolean        @default(true)
+  position        Int            @default(0)
+  cuts            BreedCut[]
+  products        Product[]
+}
+
+model Cut {
+  id          String     @id @default(cuid())
+  slug        String     @unique
+  name        String
+  altNames    String?
+  anatomy     String?    // posizione anatomica
+  zone        String?    // id zona nell'illustrazione SVG (chuck, rib, loin, sirloin, round, brisket, plate, flank)
+  description String?
+  flavour     String?
+  texture     String?
+  cooking     String?
+  ageing      String?
+  images      String[]
+  isDemo      Boolean    @default(false)
+  published   Boolean    @default(true)
+  position    Int        @default(0)
+  breeds      BreedCut[]
+  products    Product[]
+}
+
+model BreedCut {
+  breedId String
+  cutId   String
+  breed   Breed @relation(fields: [breedId], references: [id], onDelete: Cascade)
+  cut     Cut   @relation(fields: [cutId], references: [id], onDelete: Cascade)
+  @@id([breedId, cutId])
+}
+
+// ── Menu ────────────────────────────────────────────────
+model Category {
+  id        String     @id @default(cuid())
+  name      String
+  slug      String     @unique
+  parentId  String?
+  parent    Category?  @relation("CatTree", fields: [parentId], references: [id])
+  children  Category[] @relation("CatTree")
+  position  Int        @default(0)
+  active    Boolean    @default(true)
+  products  Product[]
+}
+
+model Allergen {
+  id       String            @id @default(cuid())
+  code     String            @unique // 14 allergeni Reg. UE 1169/2011
+  name     String
+  products ProductAllergen[]
+}
+
+model Product {
+  id            String            @id @default(cuid())
+  name          String
+  slug          String            @unique
+  description   String?
+  ingredients   String?
+  categoryId    String
+  category      Category          @relation(fields: [categoryId], references: [id])
+  priceMode     PriceMode         @default(FIXED)
+  priceCents    Int               // prezzo fisso, al kg, all'etto o a porzione secondo priceMode
+  takeawayPriceCents Int?         // prezzo differenziato asporto/delivery
+  estWeightGrams Int?             // peso indicativo per stima a peso
+  hasCooking    Boolean           @default(false) // livelli di cottura selezionabili
+  images        String[]
+  available     Boolean           @default(true)
+  active        Boolean           @default(true)
+  dailySpecial  Boolean           @default(false)
+  offMenu       Boolean           @default(false)
+  seasonal      Boolean           @default(false)
+  channels      OrderChannel[]    @default([TABLE, TAKEAWAY, DELIVERY])
+  breedId       String?
+  breed         Breed?            @relation(fields: [breedId], references: [id])
+  cutId         String?
+  cut           Cut?              @relation(fields: [cutId], references: [id])
+  origin        String?
+  pairing       String?
+  isDemo        Boolean           @default(false)
+  position      Int               @default(0)
+  allergens     ProductAllergen[]
+  optionGroups  OptionGroup[]
+  orderItems    OrderItem[]
+  stock         StockItem?
+  updatedAt     DateTime          @updatedAt
+  @@index([categoryId, position])
+}
+
+model ProductAllergen {
+  productId  String
+  allergenId String
+  traces     Boolean  @default(false)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  allergen   Allergen @relation(fields: [allergenId], references: [id], onDelete: Cascade)
+  @@id([productId, allergenId])
+}
+
+model OptionGroup {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String   // "Contorno", "Aggiunte", "Formato"
+  minSelect Int      @default(0)
+  maxSelect Int      @default(1)
+  position  Int      @default(0)
+  options   Option[]
+}
+
+model Option {
+  id         String      @id @default(cuid())
+  groupId    String
+  group      OptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  name       String
+  priceCents Int         @default(0)
+  available  Boolean     @default(true)
+}
+
+model Promotion {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  kind        String   // banner, special, tasting, offer
+  image       String?
+  startsAt    DateTime
+  endsAt      DateTime
+  active      Boolean  @default(true)
+  productIds  String[]
+}
+
+// ── Sala, tavoli, QR ────────────────────────────────────
+model Table {
+  id           String         @id @default(cuid())
+  number       Int            @unique
+  label        String?
+  seats        Int
+  area         String         @default("Sala")
+  posX         Int            @default(0)
+  posY         Int            @default(0)
+  active       Boolean        @default(true)
+  reservable   Boolean        @default(true)
+  qrCodes      QrCode[]
+  sessions     TableSession[]
+  reservations Reservation[]
+}
+
+model QrCode {
+  id        String   @id @default(cuid())
+  token     String   @unique // segreto non indovinabile nell'URL /t/{token}
+  kind      String   // TABLE | MENU | SECTION
+  tableId   String?
+  table     Table?   @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  target    String?  // per MENU/SECTION: path di destinazione
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model TableSession {
+  id        String    @id @default(cuid())
+  tableId   String
+  table     Table     @relation(fields: [tableId], references: [id])
+  openedAt  DateTime  @default(now())
+  closedAt  DateTime?
+  orders    Order[]
+  @@index([tableId, closedAt])
+}
+
+// ── Clienti e consensi ──────────────────────────────────
+model Customer {
+  id           String        @id @default(cuid())
+  name         String
+  email        String?       @unique
+  phone        String?
+  preferences  String?
+  privateNotes String?
+  createdAt    DateTime      @default(now())
+  reservations Reservation[]
+  orders       Order[]
+  consents     Consent[]
+  messages     Notification[]
+}
+
+model Consent {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  kind       String   // privacy, marketing_email, marketing_whatsapp
+  granted    Boolean
+  source     String   // form prenotazione, ordine, admin
+  textVersion String?
+  createdAt  DateTime @default(now())
+  @@index([customerId, kind])
+}
+
+// ── Prenotazioni ────────────────────────────────────────
+model Shift {
+  id          String  @id @default(cuid())
+  name        String  // Pranzo, Cena
+  weekdays    Int[]   // 0=dom … 6=sab
+  start       String  // "12:30"
+  end         String  // "15:00"
+  slotMinutes Int     @default(30)
+  maxCovers   Int     // capienza del turno
+  active      Boolean @default(true)
+}
+
+model Closure {
+  id     String   @id @default(cuid())
+  date   DateTime @db.Date
+  reason String?
+}
+
+model Reservation {
+  id          String            @id @default(cuid())
+  code        String            @unique
+  customerId  String
+  customer    Customer          @relation(fields: [customerId], references: [id])
+  startsAt    DateTime
+  endsAt      DateTime
+  people      Int
+  status      ReservationStatus @default(PENDING)
+  tableId     String?
+  table       Table?            @relation(fields: [tableId], references: [id])
+  notes       String?
+  source      String            @default("web") // web, phone, walk-in
+  idempotencyKey String?        @unique
+  createdAt   DateTime          @default(now())
+  @@index([startsAt, status])
+}
+
+// ── Ordini e pagamenti ──────────────────────────────────
+model Order {
+  id             String        @id @default(cuid())
+  number         Int           @default(autoincrement()) @unique
+  channel        OrderChannel
+  status         OrderStatus   @default(RECEIVED)
+  sessionId      String?
+  session        TableSession? @relation(fields: [sessionId], references: [id])
+  tableNumber    Int?
+  customerId     String?
+  customer       Customer?     @relation(fields: [customerId], references: [id])
+  notes          String?
+  pickupAt       DateTime?
+  deliveryAddress String?
+  estimatedCents Int           // totale stimato (include indicativi a peso)
+  finalCents     Int?          // totale definitivo dopo pesatura/conferma
+  hasWeighted    Boolean       @default(false)
+  paymentMethod  PaymentMethod?
+  idempotencyKey String        @unique // impedisce doppio invio
+  items          OrderItem[]
+  payments       Payment[]
+  events         OrderEvent[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  @@index([status, createdAt])
+}
+
+model OrderItem {
+  id            String    @id @default(cuid())
+  orderId       String
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product   @relation(fields: [productId], references: [id])
+  nameSnapshot  String
+  quantity      Int
+  priceMode     PriceMode
+  unitCents     Int       // prezzo unitario (o al kg/hg) al momento dell'ordine
+  optionsCents  Int       @default(0)
+  estWeightGrams Int?
+  actualWeightGrams Int?  // inserito dalla cucina
+  weightConfirmed Boolean @default(false)
+  cooking       String?
+  options       Json      @default("[]")
+  notes         String?
+  lineEstCents  Int
+  lineFinalCents Int?
+}
+
+model OrderEvent {
+  id        String      @id @default(cuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    OrderStatus
+  userId    String?
+  createdAt DateTime    @default(now())
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  orderId     String
+  order       Order         @relation(fields: [orderId], references: [id])
+  method      PaymentMethod
+  status      PaymentStatus @default(PENDING)
+  amountCents Int
+  externalRef String?       // es. Stripe PaymentIntent id (mai dati carta)
+  recordedBy  String?
+  createdAt   DateTime      @default(now())
+}
+
+// ── Magazzino ───────────────────────────────────────────
+model StockItem {
+  id         String      @id @default(cuid())
+  productId  String?     @unique
+  product    Product?    @relation(fields: [productId], references: [id])
+  name       String
+  unit       String      @default("pz") // pz, g, kg
+  quantity   Decimal     @default(0) @db.Decimal(12, 3)
+  minLevel   Decimal     @default(0) @db.Decimal(12, 3)
+  moves      StockMove[]
+}
+
+model StockMove {
+  id        String        @id @default(cuid())
+  itemId    String
+  item      StockItem     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  type      StockMoveType
+  delta     Decimal       @db.Decimal(12, 3)
+  reason    String?
+  userId    String?
+  createdAt DateTime      @default(now())
+}
+
+// ── Notifiche ───────────────────────────────────────────
+model Notification {
+  id         String    @id @default(cuid())
+  channel    String    // email, whatsapp, internal
+  to         String
+  subject    String?
+  body       String
+  status     String    @default("queued") // queued, sent, skipped_not_configured, failed
+  error      String?
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id])
+  createdAt  DateTime  @default(now())
+}
