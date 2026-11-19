@@ -3,7 +3,7 @@ import { db } from "./db";
 export const DEFAULTS = {
   brand: { name: "Vecciarì", tagline: "Grano & Brace", motto: "Matera", logo: "/brand/logo-naming-oro.webp", mark: "/brand/fiamma-oro.webp", favicon: "/icon-192.png",
     colors: { ink: "10 10 8", coal: "22 20 16", gold: "233 194 58", goldDeep: "201 150 30", cream: "250 246 236" } },
-  contacts: { address: "[DEMO] Indirizzo da inserire", phone: "", whatsapp: "", email: "", mapsUrl: "", instagram: "", facebook: "",
+  contacts: { address: "[DEMO] Indirizzo da inserire", phone: "", whatsapp: "", email: "", mapsUrl: "", instagram: "https://www.instagram.com/vecciari_granoebrace/", facebook: "",
     hours: "[DEMO] Orari da inserire" },
   ordering: { tableEnabled: true, takeawayEnabled: false, deliveryEnabled: false, payAtTable: true, payAtCounter: true, stripeEnabled: false, payTiming: "END" as "END" | "ADVANCE",
     prepMinutes: 30, deliveryMinCents: 3000, deliveryFeeCents: 300, deliveryZones: "" },
