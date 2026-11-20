@@ -76,6 +76,10 @@ export async function createCheckout(orderId: string) {
       return { paid: true };
     }
     if (session.status === "open" && session.url) return { url: session.url };
+    // Checkout concluso non equivale a pagamento fallito: la banca può
+    // ancora confermare l'incasso. Sbloccare qui consentirebbe un doppio pagamento.
+    if (session.status !== "expired")
+      throw new HttpError(409, "Pagamento online aperto o in verifica. Non pagare nuovamente alla cassa finché il tentativo non è concluso o annullato.");
     await db.payment.updateMany({ where: { id: payment.id, status: "PENDING" }, data: { status: "FAILED" } });
     throw new HttpError(409, "Tentativo terminato. Premi nuovamente Paga online per riprovare.");
   }

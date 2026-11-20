@@ -97,6 +97,13 @@ describe("checkout e incassi: provider e database simulati", () => {
     await expect(cancelCheckout(order.id)).rejects.toThrow("attendi");
     expect(order.payments[0].status).toBe("PENDING");
   });
+  it("non permette un secondo incasso mentre la banca sta ancora confermando", async () => {
+    addPending(); session.status = "complete"; session.payment_status = "unpaid"; session.url = null;
+    await expect(createCheckout(order.id)).rejects.toThrow("in verifica");
+    expect(order.payments[0].status).toBe("PENDING");
+    expect(m.db.payment.updateMany).not.toHaveBeenCalled();
+    expect(m.db.payment.create).not.toHaveBeenCalled();
+  });
   it("non considera il ritorno dal checkout una conferma di incasso", async () => {
     addPending(); await processStripeEvent(event());
     expect(order.payments[0].status).toBe("PENDING"); expect(m.email).not.toHaveBeenCalled();
