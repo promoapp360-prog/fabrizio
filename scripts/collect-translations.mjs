@@ -12,6 +12,8 @@ function add(value) {
   if (typeof value !== "string") return;
   const normalized = normalize(decode(value));
   if (!normalized || !/\p{L}/u.test(normalized) || /^(?:https?:|\/|@|#[a-fA-F0-9]{3,8}$)/.test(normalized)) return;
+  if (/^(?:mailto:|tel:|url\(|rgb\(|\(min-width:|a\[href\]|;\s*Secure|Cache-Control$|Serializable$|Restaurant$|(?:online|order|ordine|res|res-receipt|res-slots|reservation):\{|c-\{)/.test(normalized) ||
+      /^\{[0-9]+\}(?:=|T[0-9{]|\/menu$)/.test(normalized) || /^-\{[0-9]+\}px$/.test(normalized)) return;
   messages.add(normalized);
 }
 function content(value, key = "") {
@@ -29,18 +31,22 @@ async function scan(directory) {
     if (!/\.[jt]sx?$/.test(entry.name)) continue;
     const source = ts.createSourceFile(file, await fs.readFile(file, "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
     function visit(node) {
+      let attribute = node.parent;
+      while (attribute && !ts.isJsxAttribute(attribute) && !ts.isSourceFile(attribute)) attribute = attribute.parent;
+      const inClassName = attribute && ts.isJsxAttribute(attribute) && attribute.name.getText(source) === "className";
       if (ts.isJsxText(node)) add(node.text);
       if (ts.isStringLiteralLike(node)) {
         const parent = node.parent;
         if (ts.isJsxAttribute(parent)) { if (allowedAttrs.has(parent.name.getText(source))) add(node.text); }
-        else if (!ts.isImportDeclaration(parent) && !ts.isExportDeclaration(parent) &&
-          /\p{L}/u.test(node.text) && (/[À-ÿ’…?]/u.test(node.text) || /^[A-ZÀ-Ý][^/]*\s/u.test(node.text)) &&
+        else if (!inClassName && !ts.isImportDeclaration(parent) && !ts.isExportDeclaration(parent) && !ts.isExpressionStatement(parent) &&
+          /\p{L}/u.test(node.text) && (/[À-ÿ’…?]/u.test(node.text) || /\s/u.test(node.text.trim()) || /^[A-ZÀ-Ý][a-zà-ÿ]/u.test(node.text)) &&
+          !["Escape", "Enter", "Tab"].includes(node.text) &&
           !/^(?:GET|POST|PATCH|DELETE|Content-Type|application\/|[A-Za-z]+\/)/.test(node.text)) add(node.text);
       }
       if (ts.isTemplateExpression(node)) {
         let template = node.head.text;
         node.templateSpans.forEach((span, i) => { template += `{${i}}${span.literal.text}`; });
-        if (/^[A-ZÀ-Ý]|[à-ÿ]/u.test(template) && !template.includes("://") && !template.includes("class=")) add(template);
+        if (!inClassName && /\p{L}/u.test(template) && !template.includes("://") && !template.includes("class=")) add(template);
       }
       if (ts.isJsxElement(node) || ts.isJsxFragment(node)) {
         let template = "", slot = 0;
@@ -93,7 +99,7 @@ try {
   const settings = await db.setting.findMany({ where: { key: { in: ["brand", "contacts", "ordering", "reservations", "seo", "cooking"] } } });
   for (const setting of settings) content(setting.value);
 } finally { await db.$disconnect(); }
-["Scegli la lingua", "Lingua", "Contenuto originale in italiano", "Lingua del sito", "Caricamento…"].forEach(add);
+["Scegli la lingua", "Lingua", "Contenuto originale in italiano", "Lingua del sito", "Caricamento…", "(tracce)", "{0} (tracce)"].forEach(add);
 const sorted = [...messages].sort((a, b) => a.localeCompare(b, "it"));
 const output = path.join(root, "src/lib/i18n/source.json");
 await fs.mkdir(path.dirname(output), { recursive: true });

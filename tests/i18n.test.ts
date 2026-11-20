@@ -64,4 +64,15 @@ describe("Lingue del sito pubblico", () => {
       expect(esTree.props.name).toBe("Menu");
     }
   });
+  it("traduce anche le tracce degli allergeni e gli stati operativi", () => {
+    const t = makeTranslator({
+      "Allergeni: {0}": "Alérgenos: {0}",
+      "{0} (tracce)": "{0} (trazas)",
+      "Latte": "Leche",
+      "Glutine": "Gluten",
+      "Pronto": "Listo",
+    });
+    expect(t("Allergeni: Glutine (tracce), Latte")).toBe("Alérgenos: Gluten (trazas), Leche");
+    expect(t("Pronto")).toBe("Listo");
+  });
 });

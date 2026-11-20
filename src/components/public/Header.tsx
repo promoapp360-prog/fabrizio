@@ -58,9 +58,9 @@ export default function Header({ logo, name, orderOnline }: { logo: string; name
       className={`site-header fixed inset-x-0 top-0 z-[60] border-b border-cream/5 bg-ink xl:bg-ink/80 xl:backdrop-blur ${pathname === "/" ? "site-header--home" : ""}`}>
       {!open && <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:bg-gold focus:px-3 focus:py-1 focus:text-ink">Vai al contenuto</a>}
       <div className="site-header-row mx-auto flex max-w-7xl items-center justify-between px-4">
-        <Link href="/" translate="no" onClick={() => setOpen(false)} className="header-brand flex shrink-0 items-center gap-2 whitespace-nowrap" aria-label={`${name} — home`}>
+        <Link href="/" onClick={() => setOpen(false)} className="header-brand flex shrink-0 items-center gap-2 whitespace-nowrap" aria-label={`${name} — home`}>
           <img src={logo} alt="" className="header-brand-mark h-10 w-auto" />
-          <span className="header-brand-name font-display text-lg uppercase tracking-wide">VECCIARÍ<span className="header-brand-subtitle block font-body text-[8px] font-normal tracking-[0.22em] text-gold lg:font-display">GRANO &amp; BRACE – MATERA</span></span>
+          <span translate="no" className="header-brand-name font-display text-lg uppercase tracking-wide">VECCIARÍ<span className="header-brand-subtitle block font-body text-[8px] font-normal tracking-[0.22em] text-gold lg:font-display">GRANO &amp; BRACE – MATERA</span></span>
         </Link>
         <nav className="hidden items-center gap-3 xl:flex" aria-label="Principale">
           {NAV.map(([h, l]) => <Link key={h} href={h} className="text-sm uppercase tracking-widest text-cream/80 hover:text-gold">{l}</Link>)}
