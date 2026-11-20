@@ -1,5 +1,6 @@
 "use client";
 import Translated from "@/components/public/Translated";
+import { useEffect, useState } from "react";
 
 export type OrderDetailsValue = {
   name: string; phone: string; email: string; tableNumber: string;
@@ -14,6 +15,14 @@ export default function OrderDetails({ value, onChange, channel, prepMinutes = 3
   value: OrderDetailsValue; onChange: (v: OrderDetailsValue) => void;
   channel: "TABLE" | "TAKEAWAY" | "DELIVERY"; prepMinutes?: number; fixedTable?: boolean;
 }) {
+  const [online, setOnline] = useState(false);
+  useEffect(() => {
+    let active = true;
+    const refresh = () => fetch("/api/payments/config", { cache: "no-store" }).then(r => r.ok ? r.json() : { online: false })
+      .then(data => { if (active) setOnline(data.online === true); }).catch(() => { if (active) setOnline(false); });
+    refresh(); const timer = setInterval(refresh, 30000);
+    return () => { active = false; clearInterval(timer); };
+  }, []);
   const set = (key: keyof OrderDetailsValue, v: string | boolean) => onChange({ ...value, [key]: v });
   return <Translated>{<div className="mt-5 space-y-4">
     <h3 className="font-display text-lg uppercase">Dati per l’ordine</h3>
@@ -36,8 +45,7 @@ export default function OrderDetails({ value, onChange, channel, prepMinutes = 3
       <legend className="px-1 font-display uppercase">Pagamento</legend>
       <p className="text-sm text-gold">Alla cassa {channel === "TAKEAWAY" ? "al momento del ritiro" : "del ristorante"}</p>
       <p className="mt-1 text-xs text-cream/60">Il personale registra il pagamento dopo aver confermato l’importo.</p>
-      <label className="mt-3 flex items-center gap-2 text-sm text-cream/40"><input type="radio" disabled name="stripe-unavailable" /> Online con Stripe — non ancora attivo</label>
-      <p className="mt-1 text-xs text-cream/50">Disponibile dopo il collegamento dell’account Vecciarì.</p>
+      <p className="mt-3 text-sm text-cream/70">{online ? "Pagamento online con Stripe disponibile nel riepilogo ordine, dopo la conferma dell’importo definitivo." : "Pagamento online momentaneamente non disponibile."}</p>
     </fieldset>
     <label className="flex items-start gap-2 text-sm"><input className="mt-1" type="checkbox" required checked={value.privacy} onChange={e => set("privacy", e.target.checked)} />
       <span>Ho letto l’<a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline">informativa privacy</a> e autorizzo il trattamento dei dati necessario all’ordine. *</span></label>

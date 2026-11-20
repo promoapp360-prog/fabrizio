@@ -43,19 +43,23 @@ export default function OrdersBoard({ mode, canPay, orderingOn }: { mode: "floor
             <li key={i.id}><b>{i.quantity}× {i.nameSnapshot}</b>{i.cooking && <span className="ml-2 rounded bg-gold px-1.5 text-ink">{i.cooking}</span>}
               {i.options.length > 0 && <p className="text-cream/70">{i.options.map((x: any) => x.name).join(", ")}</p>}
               {i.notes && <p className="italic text-gold">» {i.notes}</p>}
-              {i.estWeightGrams != null && <WeightInput item={i} onSave={g => act(o.id, { action: "weight", itemId: i.id, grams: g })} />}
+              {i.estWeightGrams != null && <WeightInput item={i} disabled={o.payments?.some((p: any) => ["PAID", "REFUNDED"].includes(p.status) || p.method === "STRIPE" && p.status === "PENDING")} onSave={g => act(o.id, { action: "weight", itemId: i.id, grams: g })} />}
             </li>))}</ul>
           {o.notes && <p className="rounded bg-gold/10 p-2 text-sm"><b>Note:</b> {o.notes}</p>}
           {o.deliveryAddress && <p className="text-sm">📍 {o.deliveryAddress}</p>}
           {mode === "floor" && <p className="mt-2 text-sm">{o.finalCents != null ? <>Totale definitivo <b>{formatEUR(o.finalCents)}</b></> : <>Totale indicativo {formatEUR(o.estimatedCents)}</>}
-            {o.payments?.some((p: any) => p.status === "PAID") && <span className="ml-2 text-green-400">Pagato</span>}</p>}
+            {o.payments?.some((p: any) => p.status === "PAID") && <span className="ml-2 text-green-400">{o.payments.some((p: any) => p.method === "STRIPE" && p.status === "PAID") ? "Pagato online · Stripe" : "Pagato"}</span>}
+            {o.payments?.some((p: any) => p.status === "REFUNDED") && <span className="ml-2 text-gold">Rimborsato su Stripe</span>}
+            {o.payments?.some((p: any) => p.method === "STRIPE" && p.status === "PENDING") && <span className="ml-2 text-gold">Pagamento online aperto / in verifica</span>}</p>}
           <div className="no-print mt-3 flex flex-wrap gap-2">
             {(NEXT[o.status] ?? []).filter(s => mode === "floor" || ["PREPARING", "READY"].includes(s)).map(s => (
               <button key={s} onClick={() => (s !== "CANCELLED" || confirm("Annullare l'ordine?")) && act(o.id, { action: "status", status: s })} className={s === "CANCELLED" ? "btn !px-3 !py-1.5 text-xs text-red-400" : "btn-gold !px-4 !py-1.5 text-sm"}>{L[s]}</button>))}
             <button className="btn !px-3 !py-1.5 text-xs border border-cream/20" onClick={() => printTicket(o)}>Stampa</button>
             {mode === "floor" && <button className="btn !px-3 !py-1.5 text-xs border border-cream/20" onClick={async () => { try { const r = await api(`/api/admin/orders/${o.id}`, "PATCH", { action: "retryEmail" }); alert(r.status === "sent" ? "Conferma email inviata (nessun duplicato se già inviata)." : r.status === "skipped_not_configured" ? "Servizio email non ancora configurato." : "Invio non riuscito o in corso. Controlla le comunicazioni del cliente."); } catch { alert("Impossibile inviare l’email."); } }}>Invia conferma email</button>}
             {mode === "floor" && canPay && o.hasWeighted && o.finalCents == null && <button className="btn-ghost !px-3 !py-1.5 text-xs" onClick={() => confirm("Il cliente ha confermato l'importo definitivo?") && act(o.id, { action: "confirmFinal" })}>Conferma importo</button>}
-            {mode === "floor" && canPay && o.finalCents != null && !o.payments?.some((p: any) => p.status === "PAID") && (
+            {mode === "floor" && canPay && o.payments?.some((p: any) => p.method === "STRIPE" && p.status === "PENDING") &&
+              <button className="btn-ghost !px-3 !py-1.5 text-xs" onClick={() => confirm("Annullare il tentativo online? Se Stripe ha già incassato, la cassa rimarrà bloccata fino alla conferma.") && act(o.id, { action: "cancelOnline" })}>Annulla tentativo online</button>}
+            {mode === "floor" && canPay && o.finalCents != null && !o.payments?.some((p: any) => ["PAID", "REFUNDED"].includes(p.status) || p.method === "STRIPE" && p.status === "PENDING") && (
               <button className="btn-ghost !px-3 !py-1.5 text-xs" onClick={() => { if (confirm(`Confermi di avere incassato ${formatEUR(o.finalCents)} alla cassa?`)) act(o.id, { action: "payment", method: o.channel === "TABLE" ? "AT_COUNTER" : "ON_PICKUP", amountCents: o.finalCents }); }}>Registra pagamento in cassa</button>)}
           </div>
         </article>))}
@@ -64,11 +68,11 @@ export default function OrdersBoard({ mode, canPay, orderingOn }: { mode: "floor
   </div>);
 }
 
-function WeightInput({ item, onSave }: { item: any; onSave: (g: number) => void }) {
+function WeightInput({ item, onSave, disabled }: { item: any; onSave: (g: number) => void; disabled?: boolean }) {
   const [g, setG] = useState(item.actualWeightGrams ?? "");
   return <div className="no-print mt-1 flex items-center gap-2 text-sm"><span className="text-cream/60">Peso stimato {item.estWeightGrams} g · effettivo</span>
-    <input className="input !w-24 !py-1" type="number" inputMode="numeric" value={g} onChange={e => setG(e.target.value)} /> g
-    <button className="text-gold underline" onClick={() => g && onSave(Number(g))}>Salva</button>
+    <input disabled={disabled} className="input !w-24 !py-1" type="number" inputMode="numeric" value={g} onChange={e => setG(e.target.value)} /> g
+    <button disabled={disabled} className="text-gold underline disabled:opacity-40" onClick={() => g && onSave(Number(g))}>Salva</button>
     {item.lineFinalCents != null && <span>= {formatEUR(item.lineFinalCents)}</span>}</div>;
 }
 

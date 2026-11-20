@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({ findUniqueOrThrow: vi.fn(), notify: vi.fn() })
 vi.mock("../src/lib/db", () => ({ db: { order: { findUniqueOrThrow: mocks.findUniqueOrThrow } } }));
 vi.mock("../src/lib/notify", () => ({ notify: mocks.notify }));
 vi.mock("../src/lib/orders", () => ({ STATUS_LABEL: { RECEIVED: "Ricevuto", READY: "Pronto" } }));
+vi.mock("../src/lib/settings", () => ({ getSettings: async () => ({ ordering: { stripeEnabled: false } }) }));
 import { buildOrderEmail, sendOrderEmail, type OrderEmailData } from "../src/lib/order-email";
 
 const order: OrderEmailData = {
@@ -41,6 +42,10 @@ describe("contenuti e collegamento degli automatismi ordine", () => {
     expect(buildOrderEmail(order, "RECEIVED", "").body).not.toContain("Segui l’ordine");
     expect(buildOrderEmail(order, "RECEIVED", "http://localhost").body).not.toContain("Segui l’ordine");
     expect(buildOrderEmail(order, "RECEIVED", "https://restaurant.example/").body).toContain("https://restaurant.example/ordine/test-order");
+  });
+  it("distingue Stripe incassato dalla disponibilità di pagamento", () => {
+    expect(buildOrderEmail({ ...order, payments: [{ method: "STRIPE", status: "PAID" }] }, "PAID", "").body).toContain("confermato da Stripe");
+    expect(buildOrderEmail(order, "FINAL", "https://restaurant.example", true).body).toContain("Puoi pagare online dal riepilogo");
   });
   it.each(["RECEIVED", "READY", "FINAL", "PAID"])("collega %s al destinatario cliente e alla chiave deduplicata", async event => {
     mocks.findUniqueOrThrow.mockResolvedValue({ ...order, finalCents: 2750, customer: { id: "customer", name: "Anagrafica", email: "customer@example.invalid" } });

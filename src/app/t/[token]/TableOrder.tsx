@@ -1,6 +1,7 @@
 "use client";
 import Translated from "@/components/public/Translated";
 import LanguageSwitcher from "@/components/public/LanguageSwitcher";
+import Link from "next/link";
 import { useLiveCart } from "@/components/public/useLiveCart";
 import { useMenuRefresh } from "@/components/public/useMenuRefresh";
 import { useCallback, useEffect, useState } from "react";
@@ -62,6 +63,7 @@ export default function TableOrder({ token, tableLabel, tableNumber, menu, cooki
         {orders.map(o => <div key={o.id} className="card"><div className="flex justify-between"><b className="font-display uppercase">Ordine n° {o.number}</b><span className="text-gold">{LABEL[o.status]}</span></div>
           <p className="mt-1 text-sm text-cream/60">{o.items.map(i => `${i.quantity}× ${i.nameSnapshot}`).join(", ")}</p>
            <p className="mt-1 text-sm">{o.finalCents != null ? `Totale: ${formatEUR(o.finalCents)}` : `Totale indicativo: ${formatEUR(o.estimatedCents)}`}</p>
+           <Link href={`/ordine/${o.id}`} className="mt-3 inline-block text-sm text-gold underline">Riepilogo e pagamento</Link>
            {whatsapp && <a className="mt-3 inline-block text-sm text-gold underline" href={whatsappDraftUrl(whatsapp, orderWhatsAppMessage({
              number: o.number, channel: "TABLE", tableNumber,
              items: o.items.map(item => ({ name: item.nameSnapshot, quantity: item.quantity, cooking: item.cooking })),

@@ -1,0 +1,42 @@
+"use client";
+import { useState } from "react";
+import Translated from "./Translated";
+import type { OnlinePaymentState } from "@/lib/payment-policy";
+
+export default function PaymentPanel({ id, state, paidWithStripe, onChange }: {
+  id: string; state: OnlinePaymentState; paidWithStripe: boolean; onChange: () => void;
+}) {
+  const [busy, setBusy] = useState(false), [error, setError] = useState("");
+  async function action(cancel = false) {
+    setBusy(true); setError("");
+    try {
+      const response = await fetch(`/api/order/${id}/checkout`, { method: cancel ? "DELETE" : "POST" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "Pagamento non disponibile");
+      if (result.url && !cancel) {
+        const url = new URL(result.url);
+        if (url.protocol !== "https:" || url.hostname !== "checkout.stripe.com") throw new Error("Indirizzo di pagamento non valido");
+        window.location.assign(url.href);
+      } else onChange();
+    } catch (e) { setError(e instanceof Error ? e.message : "Connessione assente. Riprova."); onChange(); }
+    finally { setBusy(false); }
+  }
+  return <Translated><section className="mt-5 rounded-xl border border-cream/15 p-4" aria-label="Pagamento ordine">
+    <p role="status">{state === "paid" ? paidWithStripe ? "Pagamento online confermato da Stripe." : "Pagamento registrato dal personale."
+      : state === "refunded" ? "Pagamento rimborsato. Contatta il ristorante per assistenza."
+      : state === "cancelled" ? "Ordine annullato. Nessun nuovo pagamento disponibile."
+      : state === "waiting_amount" ? "Potrai pagare online dopo la conferma del peso e dell’importo definitivo da parte del personale."
+      : state === "waiting_restaurant" ? "Il pagamento online sarà disponibile dopo la conferma del ristorante o a fine pasto."
+      : state === "pending" ? "Pagamento online aperto o in verifica. Non pagare nuovamente alla cassa finché il tentativo non è concluso o annullato."
+      : state === "ready" ? "Scegli se pagare online con Stripe oppure alla cassa."
+      : "Pagamento alla cassa. Nessun addebito online effettuato."}</p>
+    {(state === "ready" || state === "pending") && <div className="mt-4 flex flex-wrap gap-3">
+      <button type="button" className="btn-gold" disabled={busy} onClick={() => action()}>
+        {busy ? "Attendi…" : state === "pending" ? "Riprendi pagamento online" : "Paga online con Stripe"}
+      </button>
+      {state === "pending" && <button type="button" className="btn-ghost" disabled={busy} onClick={() => action(true)}>Annulla tentativo online</button>}
+    </div>}
+    {error && <p role="alert" className="mt-3 text-sm text-red-300">{error}</p>}
+    {(state === "ready" || state === "pending") && <p className="mt-3 text-xs text-cream/60">I dati della carta vengono inseriti soltanto su Stripe. Il ritorno al sito non conferma da solo il pagamento.</p>}
+  </section></Translated>;
+}

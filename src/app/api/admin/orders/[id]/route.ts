@@ -8,6 +8,8 @@ import { lineCents, type PriceMode, isWeighted } from "@/lib/pricing";
 import { audit } from "@/lib/audit";
 import { can } from "@/lib/rbac";
 import { sendOrderEmail } from "@/lib/order-email";
+import { hasOpenStripePayment } from "@/lib/payment-policy";
+import { cancelCheckout } from "@/lib/stripe-payments";
 
 const schema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("status"), status: z.enum(["CONFIRMED", "PREPARING", "READY", "SERVED", "CANCELLED"]) }),
@@ -15,6 +17,7 @@ const schema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("confirmFinal") }),
   z.object({ action: z.literal("payment"), method: z.enum(["AT_TABLE", "AT_COUNTER", "ON_PICKUP"]), amountCents: z.number().int().min(1) }),
   z.object({ action: z.literal("retryEmail") }),
+  z.object({ action: z.literal("cancelOnline") }),
 ]);
 
 export const PATCH = handle(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
@@ -26,6 +29,12 @@ export const PATCH = handle(async (req: Request, { params }: { params: Promise<{
     const notification = await sendOrderEmail(id);
     return NextResponse.json({ status: notification?.status ?? "not_available" });
   }
+  if (body.action === "cancelOnline") {
+    await requirePermission("orders.payments");
+    const result = await cancelCheckout(id);
+    await audit(user.id, "order_cancel_online", "Order", id);
+    return NextResponse.json(result);
+  }
   if (body.action === "status" && !can(user.role, "orders.manage") && !["PREPARING", "READY"].includes(body.status))
     throw new HttpError(403, "Permesso negato");
   if (body.action === "payment" || body.action === "confirmFinal") await requirePermission("orders.payments");
@@ -34,6 +43,11 @@ export const PATCH = handle(async (req: Request, { params }: { params: Promise<{
     // Row lock serializes concurrent payments, weights and confirmations.
     const order = await tx.order.update({ where: { id }, data: { updatedAt: new Date() }, include: { items: true, payments: true } });
     const paid = order.payments.find(p => p.status === "PAID");
+    if (hasOpenStripePayment(order.payments) && (["weight", "confirmFinal", "payment"].includes(body.action) ||
+      body.action === "status" && body.status === "CANCELLED"))
+      throw new HttpError(409, "Pagamento online aperto: annullalo prima di modificare importo, annullare l’ordine o incassare alla cassa.");
+    if (order.payments.some(p => p.status === "REFUNDED") && ["weight", "confirmFinal", "payment"].includes(body.action))
+      throw new HttpError(409, "Ordine rimborsato: crea un nuovo ordine senza modificare lo storico.");
     if (body.action === "status") {
       if (!STATUS_FLOW[order.status].includes(body.status)) throw new HttpError(409, "Stato già aggiornato o passaggio non consentito");
       if (paid && body.status === "CANCELLED") throw new HttpError(409, "Ordine già pagato: gestisci prima lo storno con il responsabile");
