@@ -1,5 +1,6 @@
 import Translated from "@/components/public/ServerTranslated";
 import Link from "next/link";
+import Image from "next/image";
 
 export const metadata = {
   title: "Le origini di Vecciarì, storia e tradizione a Matera",
@@ -33,6 +34,35 @@ export default function Storia() {
           </p>
         </div>
       </section>
+
+      <figure className="relative isolate mx-auto -mt-6 mb-2 h-[clamp(15rem,38vw,27rem)] w-full max-w-6xl overflow-hidden md:-mt-10">
+        <Image
+          src="/brand/matera-sassi.webp"
+          alt="Veduta panoramica dei Sassi di Matera"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-[center_48%] brightness-[.68] saturate-[.82]"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-r from-ink via-transparent to-ink"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgb(var(--c-ink))_0%,transparent_20%,transparent_65%,rgb(var(--c-ink))_100%)]"
+        />
+        <figcaption className="absolute bottom-8 right-6 z-10 text-[10px] text-cream/65 md:bottom-10 md:right-12 md:text-xs">
+          <a
+            href="https://commons.wikimedia.org/wiki/File:%221993_wurden_die_Sassi_di_Matera_als_einzigartiges_Zeugnis_der_Grottenkultur_zum_Weltkulturerbe_erkl%C3%A4rt%22_08.jpg"
+            target="_blank"
+            rel="noreferrer"
+            className="underline decoration-cream/40 underline-offset-2 hover:text-gold"
+          >
+            Fotografia di Holger Uwe Schmitt · Wikimedia Commons · CC BY-SA 4.0
+          </a>
+        </figcaption>
+      </figure>
 
       <article className="mx-auto max-w-3xl px-5 pb-20 md:px-8 md:pb-28">
         <div className="space-y-7 border-l border-gold/40 pl-5 text-base leading-8 text-cream/80 md:space-y-8 md:pl-8 md:text-lg md:leading-9">
