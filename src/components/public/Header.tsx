@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-const NAV = [["/ristorante", "Il ristorante"], ["/carne", "Mondo della carne"], ["/menu", "Menu"], ["/prenota", "Prenota"]] as const;
+const NAV = [["/ristorante", "Il ristorante"], ["/storia", "Le origini"], ["/carne", "Mondo della carne"], ["/menu", "Menu"], ["/prenota", "Prenota"]] as const;
 
 export default function Header({ logo, name, orderOnline }: { logo: string; name: string; orderOnline: boolean }) {
   const [open, setOpen] = useState(false);
