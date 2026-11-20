@@ -2,6 +2,7 @@ import Translated from "@/components/public/ServerTranslated";
 import Link from "next/link";
 import type { Settings } from "@/lib/settings";
 import { getMapsDirectionsUrl } from "@/lib/maps";
+import CompanyDetails from "@/components/public/CompanyDetails";
 export default function Footer({ s }: { s: Settings }) {
   const c = s.contacts;
   return <Translated>{(
@@ -18,6 +19,9 @@ export default function Footer({ s }: { s: Settings }) {
       </div>
       <div className="border-t border-cream/5 py-5 text-center text-xs text-cream/50">
         © {new Date().getFullYear()} {s.brand.name} · <Link href="/privacy" className="underline">Privacy</Link> · <Link href="/cookie" className="underline">Cookie</Link> · <Link href="/admin/login" className="underline hover:text-gold">Admin</Link>
+        <div className="mx-auto mt-2 max-w-5xl px-4">
+          <CompanyDetails compact />
+        </div>
       </div>
       {c.whatsapp && <a
         href={`https://wa.me/${c.whatsapp.replace(/\D/g, "")}`}
