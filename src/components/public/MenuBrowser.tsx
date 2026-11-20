@@ -1,6 +1,8 @@
 "use client";
+import Translated from "@/components/public/Translated";
 import { useEffect, useMemo, useState } from "react";
 import { useMenuRefresh } from "./useMenuRefresh";
+import { useLanguage } from "./LanguageProvider";
 import type { MenuData } from "@/lib/menu";
 import { formatEUR, priceLabel, lineCents, isWeighted, type PriceMode } from "@/lib/pricing";
 
@@ -9,6 +11,7 @@ export type CartLine = { key: string; productId: string; name: string; quantity:
 
 export default function MenuBrowser({ menu, cooking, cartEnabled = false, onCartChange, cart = [], liveRefresh = true }:
   { menu: MenuData; cooking: string[]; cartEnabled?: boolean; cart?: CartLine[]; onCartChange?: (c: CartLine[]) => void; liveRefresh?: boolean }) {
+  const { t } = useLanguage();
   const [q, setQ] = useState(""); const [cat, setCat] = useState<string | null>(null);
   const [noAllergen, setNoAllergen] = useState<string[]>([]); const [openId, setOpenId] = useState<string | null>(null);
   const open = menu.products.find(p => p.id === openId) ?? null;
@@ -20,12 +23,12 @@ export default function MenuBrowser({ menu, cooking, cartEnabled = false, onCart
   const catIds = (id: string): string[] => [id, ...menu.categories.filter(c => c.parentId === id).flatMap(c => catIds(c.id))];
 
   const filtered = menu.products.filter(p =>
-    (!q || `${p.name} ${p.description ?? ""} ${p.ingredients ?? ""}`.toLowerCase().includes(q.toLowerCase())) &&
+    (!q || `${p.name} ${p.description ?? ""} ${p.ingredients ?? ""} ${t(p.name)} ${t(p.description ?? "")} ${t(p.ingredients ?? "")}`.toLocaleLowerCase().includes(q.toLocaleLowerCase())) &&
     (!cat || catIds(cat).includes(p.categoryId)) &&
     !p.allergens.some(a => noAllergen.includes(a.code)));
   const specials = filtered.filter(p => p.dailySpecial || p.offMenu || p.specialty || p.recommended);
 
-  return (
+  return <Translated>{(
     <div>
       {!!menu.promos.length && <div className="mb-6 space-y-2">{menu.promos.map(p => <div key={p.id} className="rounded-xl bg-gold-grad px-4 py-3 text-ink"><b className="font-display uppercase">{p.title}</b> {p.description}</div>)}</div>}
       <div className="sticky top-16 z-30 -mx-4 space-y-3 bg-ink/95 px-4 py-3 backdrop-blur">
@@ -51,11 +54,11 @@ export default function MenuBrowser({ menu, cooking, cartEnabled = false, onCart
       {!filtered.length && <p className="mt-10 text-center text-cream/60">Nessun piatto trovato.</p>}
       {open && <ProductSheet p={open} cooking={cooking} cartEnabled={cartEnabled} onClose={() => setOpen(null)}
         onAdd={line => { onCartChange?.([...cart, line]); setOpen(null); }} />}
-    </div>);
+    </div>)}</Translated>;
 }
 
 function List({ items, onOpen }: { items: P[]; onOpen: (p: P) => void }) {
-  return <ul className="mt-3 divide-y divide-cream/10">{items.map(p => (
+  return <Translated>{<ul className="mt-3 divide-y divide-cream/10">{items.map(p => (
     <li key={p.id}><button onClick={() => onOpen(p)} className={`flex w-full gap-3 py-5 text-left sm:gap-5 ${!p.available ? "opacity-60" : ""}`}>
       {p.image && <img src={p.image} alt={p.name} loading="lazy" className="h-24 w-24 shrink-0 rounded-xl object-cover sm:h-28 sm:w-28" />}
       <div className="min-w-0 flex-1">
@@ -67,7 +70,7 @@ function List({ items, onOpen }: { items: P[]; onOpen: (p: P) => void }) {
         <p className="mt-2 text-sm text-gold">{p.pricePending ? "Prezzo da definire" : priceLabel(p.priceMode as PriceMode, p.priceCents)}
           {isWeighted(p.priceMode as PriceMode) && p.estWeightGrams && <span className="ml-2 text-xs text-cream/50">≈ {p.estWeightGrams} g</span>}</p>
       </div>
-    </button></li>))}</ul>;
+    </button></li>))}</ul>}</Translated>;
 }
 
 function ProductSheet({ p, cooking, cartEnabled, onClose, onAdd }: { p: P; cooking: string[]; cartEnabled: boolean; onClose: () => void; onAdd: (l: CartLine) => void }) {
@@ -83,7 +86,7 @@ function ProductSheet({ p, cooking, cartEnabled, onClose, onAdd }: { p: P; cooki
     if (g.max === 1) return setSel([...sel.filter(x => !inG.includes(x)), id]);
     if (inG.length < g.max) setSel([...sel, id]);
   };
-  return (
+  return <Translated>{(
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 md:items-center" role="dialog" aria-modal="true" aria-labelledby="ps-title" onClick={onClose}>
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-coal p-6 md:rounded-3xl" onClick={e => e.stopPropagation()}>
         {p.image && <img src={p.image} alt="" className="-mx-6 -mt-6 mb-4 aspect-video w-[calc(100%+3rem)] max-w-none object-cover" />}
@@ -115,5 +118,5 @@ function ProductSheet({ p, cooking, cartEnabled, onClose, onAdd }: { p: P; cooki
           </div>
         </>}
       </div>
-    </div>);
+    </div>)}</Translated>;
 }

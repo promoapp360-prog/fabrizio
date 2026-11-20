@@ -1,4 +1,6 @@
 "use client";
+import Translated from "@/components/public/Translated";
+import { useLanguage } from "@/components/public/LanguageProvider";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { reservationInputSchema, todayInRome, type ReservationAvailability } from "@/lib/reservation-input";
@@ -12,6 +14,7 @@ const blank = () => ({ date: todayInRome(), people: 0, time: "", name: "", phone
 export default function ReservationForm({ maxParty, phone, whatsapp, initialReceiptId }: {
   maxParty: number; phone: string; whatsapp: string; initialReceiptId?: string;
 }) {
+  const { locale } = useLanguage();
   const router = useRouter();
   const [f, setF] = useState(blank), [step, setStep] = useState<Step>(0);
   const [availability, setAvailability] = useState<ReservationAvailability | null>(null);
@@ -58,7 +61,7 @@ export default function ReservationForm({ maxParty, phone, whatsapp, initialRece
   }, [f.date, f.people, f.time, step, refresh, receiptId]);
 
   const set = (key: keyof typeof f, value: string | boolean) => { setF(current => ({ ...current, [key]: value })); setError(""); };
-  const readableDate = f.date ? new Date(`${f.date}T12:00:00`).toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : "";
+  const readableDate = f.date ? new Date(`${f.date}T12:00:00`).toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : "";
   const wa = whatsapp.replace(/\D/g, "");
   const contactLink = wa ? `https://wa.me/${wa}?text=${encodeURIComponent(`Buongiorno, vorrei prenotare da Vecciarì per oltre ${maxParty} persone${f.date ? ` il ${readableDate}` : ""}. Possiamo organizzare il tavolo?`)}` : "";
   function advance() {
@@ -94,9 +97,9 @@ export default function ReservationForm({ maxParty, phone, whatsapp, initialRece
     setReceiptId(undefined); setStep(0); setF(blank()); setGroup(false); setError("");
     setAvailability(null); setIdem(crypto.randomUUID()); router.replace("/prenota", { scroll: false });
   }
-  if (receiptId) return <ReservationReceipt id={receiptId} phone={phone} whatsapp={whatsapp} onNew={startAgain} />;
+  if (receiptId) return <Translated>{<ReservationReceipt id={receiptId} phone={phone} whatsapp={whatsapp} onNew={startAgain} />}</Translated>;
 
-  return <form onSubmit={submit} className="card mt-8 min-w-0 space-y-6">
+  return <Translated>{<form onSubmit={submit} className="card mt-8 min-w-0 space-y-6">
     <ol className="grid grid-cols-4 gap-1" aria-label="Avanzamento prenotazione">
       {steps.map((label, index) => <li key={label}><button type="button" disabled={index > step || busy} aria-current={index === step ? "step" : undefined}
         onClick={() => { setStep(index as Step); setError(""); }} className="flex min-h-16 w-full flex-col items-center gap-1.5 rounded-lg py-1 disabled:cursor-default">
@@ -159,5 +162,5 @@ export default function ReservationForm({ maxParty, phone, whatsapp, initialRece
     {availabilityError && <div role="alert" className="space-y-2 rounded-xl border border-red-400/40 p-3 text-sm"><p>{availabilityError}</p><button type="button" onClick={() => setRefresh(n => n + 1)} className="text-gold underline">Riprova disponibilità</button></div>}
     {error && <p role="alert" className="rounded-xl bg-red-900/40 p-3 text-sm">{error}</p>}
     {step > 0 && <button type="button" disabled={busy} onClick={() => { setStep((step - 1) as Step); setError(""); }} className="btn-ghost min-h-12 w-full">Indietro</button>}
-  </form>;
+  </form>}</Translated>;
 }

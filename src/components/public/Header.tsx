@@ -1,7 +1,9 @@
 "use client";
+import Translated from "@/components/public/Translated";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 const NAV = [["/ristorante", "Il ristorante"], ["/storia", "Le origini"], ["/carne", "Mondo della carne"], ["/menu", "Menu"], ["/prenota", "Prenota"]] as const;
 
@@ -14,7 +16,7 @@ export default function Header({ logo, name, orderOnline }: { logo: string; name
 
   useEffect(() => { setOpen(false); }, [pathname]);
   useEffect(() => {
-    const desktop = window.matchMedia("(min-width: 1024px)");
+    const desktop = window.matchMedia("(min-width: 1280px)");
     const closeOnDesktop = () => { if (desktop.matches) setOpen(false); };
     desktop.addEventListener("change", closeOnDesktop);
     return () => desktop.removeEventListener("change", closeOnDesktop);
@@ -51,35 +53,38 @@ export default function Header({ logo, name, orderOnline }: { logo: string; name
     };
   }, [open]);
 
-  return (
+  return <Translated>{(
     <header ref={header} role={open ? "dialog" : undefined} aria-modal={open || undefined} aria-label={open ? "Menu di navigazione" : undefined}
-      className={`site-header fixed inset-x-0 top-0 z-[60] border-b border-cream/5 bg-ink lg:z-40 lg:bg-ink/80 lg:backdrop-blur ${pathname === "/" ? "site-header--home" : ""}`}>
+      className={`site-header fixed inset-x-0 top-0 z-[60] border-b border-cream/5 bg-ink xl:bg-ink/80 xl:backdrop-blur ${pathname === "/" ? "site-header--home" : ""}`}>
       {!open && <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:bg-gold focus:px-3 focus:py-1 focus:text-ink">Vai al contenuto</a>}
       <div className="site-header-row mx-auto flex max-w-7xl items-center justify-between px-4">
-        <Link href="/" onClick={() => setOpen(false)} className="header-brand flex shrink-0 items-center gap-2 whitespace-nowrap" aria-label={`${name} — home`}>
+        <Link href="/" translate="no" onClick={() => setOpen(false)} className="header-brand flex shrink-0 items-center gap-2 whitespace-nowrap" aria-label={`${name} — home`}>
           <img src={logo} alt="" className="header-brand-mark h-10 w-auto" />
           <span className="header-brand-name font-display text-lg uppercase tracking-wide">VECCIARÍ<span className="header-brand-subtitle block font-body text-[8px] font-normal tracking-[0.22em] text-gold lg:font-display">GRANO &amp; BRACE – MATERA</span></span>
         </Link>
-        <nav className="hidden items-center gap-5 lg:flex" aria-label="Principale">
+        <nav className="hidden items-center gap-3 xl:flex" aria-label="Principale">
           {NAV.map(([h, l]) => <Link key={h} href={h} className="text-sm uppercase tracking-widest text-cream/80 hover:text-gold">{l}</Link>)}
           {orderOnline && <Link href="/ordina" className="text-sm uppercase tracking-widest text-cream/80 hover:text-gold">Ordina</Link>}
           <Link href="/prenota" className="btn-gold !py-2 text-sm">Prenota un tavolo</Link>
         </nav>
-        <button ref={toggle} className="mobile-menu-toggle relative flex h-11 w-11 shrink-0 items-center justify-center rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold lg:hidden"
+        <div className="flex shrink-0 items-center gap-1.5">
+        <LanguageSwitcher />
+        <button ref={toggle} className="mobile-menu-toggle relative flex h-11 w-11 shrink-0 items-center justify-center rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold xl:hidden"
           aria-expanded={open} aria-controls="mnav" aria-label={open ? "Chiudi menu" : "Apri menu"} onClick={() => setOpen(value => !value)}>
           {open ? <span aria-hidden="true"><span className="absolute left-2.5 top-[21px] h-0.5 w-6 rotate-45 bg-gold" /><span className="absolute left-2.5 top-[21px] h-0.5 w-6 -rotate-45 bg-gold" /></span>
             : <span aria-hidden="true"><span className="block h-0.5 w-6 bg-gold" /><span className="mt-1.5 block h-0.5 w-6 bg-gold" /><span className="mt-1.5 block h-0.5 w-6 bg-gold" /></span>}
         </button>
+        </div>
       </div>
       {open && (
         <>
           <button type="button" className="mobile-nav-backdrop" aria-label="Chiudi menu" onClick={() => setOpen(false)} />
-          <nav ref={menu} id="mnav" className="mobile-nav-panel border-t border-cream/10 bg-ink lg:hidden" aria-label="Mobile">
+          <nav ref={menu} id="mnav" className="mobile-nav-panel border-t border-cream/10 bg-ink xl:hidden" aria-label="Mobile">
             {NAV.map(([h, l]) => <Link key={h} href={h} onClick={() => setOpen(false)} className="mobile-nav-link" aria-current={pathname === h ? "page" : undefined}>{l}</Link>)}
             {orderOnline && <Link href="/ordina" onClick={() => setOpen(false)} className="mobile-nav-link" aria-current={pathname === "/ordina" ? "page" : undefined}>Ordina</Link>}
           </nav>
         </>
       )}
     </header>
-  );
+  )}</Translated>;
 }

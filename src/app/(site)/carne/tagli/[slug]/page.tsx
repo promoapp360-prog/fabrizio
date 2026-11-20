@@ -1,3 +1,4 @@
+import Translated from "@/components/public/ServerTranslated";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
@@ -18,7 +19,7 @@ export default async function Taglio({ params: pendingParams }: { params: Promis
   const products = (await loadMenu()).products.filter(p => p.cut?.slug === c.slug);
   const zone = ZONES.find(z => z.id === c.zone);
   const rows: [string, string | null][] = [["Altri nomi", c.altNames], ["Posizione anatomica", c.anatomy ?? zone?.label ?? null], ["Sapore", c.flavour], ["Consistenza", c.texture], ["Cottura consigliata", c.cooking], ["Frollatura", c.ageing]];
-  return (
+  return <Translated>{(
     <article className="mx-auto max-w-5xl px-4 py-16">
       <Link href="/carne#atlante" className="text-sm text-gold">← Atlante dei tagli</Link>
       <h1 className="mt-2 text-5xl md:text-7xl">{c.name}</h1>
@@ -31,5 +32,5 @@ export default async function Taglio({ params: pendingParams }: { params: Promis
       </div>
       {!!c.breeds.length && <section className="mt-12"><h2 className="text-2xl">Razze</h2><div className="mt-4 flex flex-wrap gap-3">{c.breeds.map(({ breed }) => <Link key={breed.id} href={`/carne/razze/${breed.slug}`} className="rounded-full border border-gold/40 px-4 py-2 hover:bg-gold hover:text-ink">{breed.name}</Link>)}</div></section>}
       {!!products.length && <section className="mt-12"><h2 className="text-2xl">Piatti con questo taglio</h2><ul className="mt-4 divide-y divide-cream/10">{products.map(p => <li key={p.id} className="flex justify-between gap-3 py-3"><span>{p.name}</span><span className="text-right text-gold">{p.pricePending ? "Prezzo da definire" : priceLabel(p.priceMode as PriceMode, p.priceCents)}</span></li>)}</ul></section>}
-    </article>);
+    </article>)}</Translated>;
 }

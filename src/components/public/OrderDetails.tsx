@@ -1,4 +1,5 @@
 "use client";
+import Translated from "@/components/public/Translated";
 
 export type OrderDetailsValue = {
   name: string; phone: string; email: string; tableNumber: string;
@@ -14,7 +15,7 @@ export default function OrderDetails({ value, onChange, channel, prepMinutes = 3
   channel: "TABLE" | "TAKEAWAY" | "DELIVERY"; prepMinutes?: number; fixedTable?: boolean;
 }) {
   const set = (key: keyof OrderDetailsValue, v: string | boolean) => onChange({ ...value, [key]: v });
-  return <div className="mt-5 space-y-4">
+  return <Translated>{<div className="mt-5 space-y-4">
     <h3 className="font-display text-lg uppercase">Dati per l’ordine</h3>
     {channel === "TABLE" && <label className="block"><span className="label">Numero del tavolo *</span>
       <input className="input" type="number" inputMode="numeric" min={1} max={999} required readOnly={fixedTable} value={value.tableNumber} onChange={e => set("tableNumber", e.target.value)} />
@@ -41,5 +42,5 @@ export default function OrderDetails({ value, onChange, channel, prepMinutes = 3
     <label className="flex items-start gap-2 text-sm"><input className="mt-1" type="checkbox" required checked={value.privacy} onChange={e => set("privacy", e.target.checked)} />
       <span>Ho letto l’<a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline">informativa privacy</a> e autorizzo il trattamento dei dati necessario all’ordine. *</span></label>
     <p className="text-xs text-cream/50">I dati vengono usati per gestire l’ordine e le comunicazioni di servizio, non per il marketing.</p>
-  </div>;
+  </div>}</Translated>;
 }

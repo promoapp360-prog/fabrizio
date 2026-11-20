@@ -1,3 +1,4 @@
+import Translated from "@/components/public/ServerTranslated";
 import Link from "next/link";
 
 export const metadata = {
@@ -13,7 +14,7 @@ export const metadata = {
 };
 
 export default function Storia() {
-  return (
+  return <Translated>{(
     <>
       <section className="relative overflow-hidden px-4 py-20 text-center md:py-28">
         <img
@@ -84,5 +85,5 @@ export default function Storia() {
         </nav>
       </article>
     </>
-  );
+  )}</Translated>;
 }

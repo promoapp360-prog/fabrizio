@@ -1,9 +1,10 @@
+import Translated from "@/components/public/ServerTranslated";
 import Link from "next/link";
 import type { Settings } from "@/lib/settings";
 import { getMapsDirectionsUrl } from "@/lib/maps";
 export default function Footer({ s }: { s: Settings }) {
   const c = s.contacts;
-  return (
+  return <Translated>{(
     <footer className="border-t border-cream/10 bg-ink">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 md:grid-cols-3">
         <div><img src={s.brand.mark} alt="" className="h-16 w-auto" /><p className="mt-4 font-display text-xl uppercase">{s.brand.name}</p><p className="text-cream/60">{s.brand.motto}</p></div>
@@ -29,5 +30,5 @@ export default function Footer({ s }: { s: Settings }) {
         </svg>
       </a>}
     </footer>
-  );
+  )}</Translated>;
 }

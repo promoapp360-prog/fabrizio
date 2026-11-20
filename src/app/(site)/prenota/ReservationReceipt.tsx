@@ -1,4 +1,6 @@
 "use client";
+import Translated from "@/components/public/Translated";
+import { useLanguage } from "@/components/public/LanguageProvider";
 import { useEffect, useState } from "react";
 import { reservationWhatsAppMessage } from "@/lib/whatsapp-draft";
 
@@ -8,6 +10,7 @@ const labels: Record<string, string> = {
   SEATED: "Benvenuto da Vecciarì", COMPLETED: "Visita completata", NO_SHOW: "Prenotazione non utilizzata", WAITLIST: "In lista d’attesa",
 };
 export default function ReservationReceipt({ id, phone, whatsapp, onNew }: { id: string; phone: string; whatsapp: string; onNew: () => void }) {
+  const { locale } = useLanguage();
   const [receipt, setReceipt] = useState<Receipt | null>(null), [error, setError] = useState("");
   useEffect(() => {
     let active = true;
@@ -23,13 +26,13 @@ export default function ReservationReceipt({ id, phone, whatsapp, onNew }: { id:
     load(); const timer = setInterval(load, 15000);
     return () => { active = false; controller.abort(); clearInterval(timer); };
   }, [id]);
-  if (!receipt) return <div role="status" className="card mt-8 space-y-4"><p>{error || "Caricamento del riepilogo…"}</p>{error && <button className="btn-ghost" onClick={onNew}>Torna alle prenotazioni</button>}</div>;
-  const date = new Date(receipt.startsAt).toLocaleString("it-IT", { timeZone: "Europe/Rome", dateStyle: "full", timeStyle: "short" });
+  if (!receipt) return <Translated>{<div role="status" className="card mt-8 space-y-4"><p>{error || "Caricamento del riepilogo…"}</p>{error && <button className="btn-ghost" onClick={onNew}>Torna alle prenotazioni</button>}</div>}</Translated>;
+  const date = new Date(receipt.startsAt).toLocaleString(locale, { timeZone: "Europe/Rome", dateStyle: "full", timeStyle: "short" });
   const startsAt = new Date(receipt.startsAt);
   const localDate = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Rome" }).format(startsAt);
   const localTime = new Intl.DateTimeFormat("it-IT", { timeZone: "Europe/Rome", hour: "2-digit", minute: "2-digit" }).format(startsAt);
   const message = reservationWhatsAppMessage({ code: receipt.code, date: localDate, time: localTime, people: receipt.people });
-  return <section className="card mt-8 space-y-5 text-center" aria-label="Riepilogo prenotazione">
+  return <Translated>{<section className="card mt-8 space-y-5 text-center" aria-label="Riepilogo prenotazione">
     <img src="/brand/fiamma-oro.webp" alt="" className="mx-auto h-16" />
     <h2 className="text-3xl text-gold" role="status">{labels[receipt.status] || "Stato prenotazione"}</h2>
     <p className="text-sm text-cream/75">{receipt.status === "PENDING" ? "La richiesta è stata registrata. Attendi la conferma del ristorante prima di considerare riservato il tavolo." : receipt.status === "CONFIRMED" ? "Il ristorante ha confermato il tuo tavolo. Ti aspettiamo!" : "Per informazioni o modifiche contatta il ristorante."}</p>
@@ -41,5 +44,5 @@ export default function ReservationReceipt({ id, phone, whatsapp, onNew }: { id:
     {whatsapp && <p className="text-xs text-cream/50">WhatsApp mostra il riepilogo già compilato. Controllalo e premi “Invia” se vuoi inoltrarlo al ristorante.</p>}
     {phone && <a className="btn-ghost min-h-12 w-full" href={`tel:${phone.replace(/[^\d+]/g, "")}`}>Chiama il ristorante</a>}
     <button type="button" className="w-full py-3 text-sm underline" onClick={onNew}>Nuova richiesta</button>
-  </section>;
+  </section>}</Translated>;
 }

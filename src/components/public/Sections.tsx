@@ -1,3 +1,4 @@
+import Translated from "@/components/public/ServerTranslated";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { priceLabel, type PriceMode } from "@/lib/pricing";
@@ -7,11 +8,11 @@ import { getMapsDirectionsUrl, getMapsEmbedUrl } from "@/lib/maps";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type C = Record<string, any>;
-const Eyebrow = ({ children }: { children: React.ReactNode }) => <p className="mb-3 text-xs uppercase tracking-[0.35em] text-gold">{children}</p>;
+const Eyebrow = ({ children }: { children: React.ReactNode }) => <Translated>{<p className="mb-3 text-xs uppercase tracking-[0.35em] text-gold">{children}</p>}</Translated>;
 
 export async function SectionRenderer({ type, c, s }: { type: string; c: C; s: Settings }) {
   switch (type) {
-    case "hero": return (
+    case "hero": return <Translated>{(
       c.restaurantHome ? <section className="restaurant-hero relative overflow-hidden bg-ink text-center" aria-label="Vecciarì – Grano & Brace, Matera">
         <picture className="absolute inset-0">
           <source media="(min-width: 768px)" srcSet={c.image || "/api/media/assets/hero-desktop.png"} />
@@ -40,15 +41,15 @@ export async function SectionRenderer({ type, c, s }: { type: string; c: C; s: S
             {(s.ordering.takeawayEnabled || s.ordering.deliveryEnabled) && <Link href="/ordina" className="btn-ghost">Ordina</Link>}
           </div>
         </div>
-      </section>);
-    case "philosophy": case "quality": case "richtext": return (
+      </section>)}</Translated>;
+    case "philosophy": case "quality": case "richtext": return <Translated>{(
       <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-24 md:grid-cols-2">
         <div><Eyebrow>{c.eyebrow}</Eyebrow><h2 className="text-3xl md:text-5xl">{c.title}</h2></div>
         <div className="space-y-4 text-lg leading-relaxed text-cream/80">{String(c.body ?? "").split("\n\n").map((p: string, i: number) => <p key={i}>{p}</p>)}</div>
-      </section>);
+      </section>)}</Translated>;
     case "meats": {
       const breeds = await db.breed.findMany({ where: { published: true }, orderBy: { position: "asc" }, take: c.limit ?? 4 });
-      return (
+      return <Translated>{(
         <section className="bg-coal py-24"><div className="mx-auto max-w-7xl px-4">
           <Eyebrow>{c.eyebrow ?? "Selezioni"}</Eyebrow><h2 className="text-3xl md:text-5xl">{c.title ?? "Le nostre carni"}</h2>
           <p className="mt-3 max-w-2xl text-xs leading-relaxed text-cream/50">Immagini generate a scopo illustrativo; non attestano provenienza o disponibilità delle carni.</p>
@@ -61,38 +62,38 @@ export async function SectionRenderer({ type, c, s }: { type: string; c: C; s: S
               <h3 className="mt-2 text-xl">{b.name}</h3><p className="text-sm text-cream/60">{[b.country, b.region].filter(Boolean).join(" · ")}</p>
             </Link>))}</div>
           <Link href="/carne" className="btn-ghost mt-10">Esplora il mondo della carne</Link>
-        </div></section>);
+        </div></section>)}</Translated>;
     }
     case "cuts": {
       const cuts = await db.cut.findMany({ where: { published: true }, orderBy: { position: "asc" }, take: c.limit ?? 6 });
-      return (
+      return <Translated>{(
         <section className="mx-auto max-w-7xl px-4 py-24"><Eyebrow>{c.eyebrow ?? "Atlante"}</Eyebrow><h2 className="text-3xl md:text-5xl">{c.title ?? "I tagli"}</h2>
           <div className="mt-10 flex flex-wrap gap-3">{cuts.map(t => <Link key={t.id} href={`/carne/tagli/${t.slug}`} className="rounded-full border border-gold/40 px-5 py-2 font-display uppercase hover:bg-gold hover:text-ink">{t.name}</Link>)}</div>
-        </section>);
+        </section>)}</Translated>;
     }
     case "menuPreview": {
       const items = (await loadMenu()).products.sort((a, b) => Number(b.specialty || b.recommended || b.dailySpecial) - Number(a.specialty || a.recommended || a.dailySpecial)).filter(p => p.dailySpecial || p.offMenu || p.specialty || p.recommended || p.available).slice(0, 6);
-      return (
+      return <Translated>{(
         <section className="bg-coal py-24"><div className="mx-auto max-w-5xl px-4">
           <Eyebrow>{c.eyebrow ?? "Dalla brace"}</Eyebrow><h2 className="text-3xl md:text-5xl">{c.title ?? "Assaggi dal menu"}</h2>
           <ul className="mt-10 divide-y divide-cream/10">{items.map(p => (
             <li key={p.id} className="flex items-baseline justify-between gap-4 py-4"><div><p className="font-display text-lg uppercase">{p.name}</p><p className="text-sm text-cream/60">{p.description}</p></div>
               <p className="shrink-0 text-right text-sm text-gold">{p.pricePending ? "Prezzo da definire" : priceLabel(p.priceMode as PriceMode, p.priceCents)}</p></li>))}</ul>
           <Link href="/menu" className="btn-gold mt-10">Menu completo</Link>
-        </div></section>);
+        </div></section>)}</Translated>;
     }
     case "gallery": {
       const media = await db.media.findMany({ where: { gallery: c.gallery ?? "home" }, orderBy: { position: "asc" }, take: 12 });
       if (!media.length) return null;
-      return (<section className="px-4 py-24"><div className="mx-auto grid max-w-7xl grid-cols-2 gap-3 md:grid-cols-4">{media.map(m => <img key={m.id} src={m.url} alt={m.alt} loading="lazy" className="aspect-square w-full rounded-xl object-cover" />)}</div></section>);
+      return <Translated>{(<section className="px-4 py-24"><div className="mx-auto grid max-w-7xl grid-cols-2 gap-3 md:grid-cols-4">{media.map(m => <img key={m.id} src={m.url} alt={m.alt} loading="lazy" className="aspect-square w-full rounded-xl object-cover" />)}</div></section>)}</Translated>;
     }
     case "reviews": {
       const list: { author: string; text: string; source?: string }[] = c.items ?? [];
       if (!list.length) return null; // solo recensioni autentiche inserite dall'admin
-      return (<section className="mx-auto max-w-6xl px-4 py-24"><Eyebrow>Dicono di noi</Eyebrow>
-        <div className="mt-8 grid gap-5 md:grid-cols-3">{list.map((r, i) => <blockquote key={i} className="card"><p className="text-cream/80">“{r.text}”</p><footer className="mt-4 text-sm text-gold">{r.author}{r.source && ` · ${r.source}`}</footer></blockquote>)}</div></section>);
+      return <Translated>{(<section className="mx-auto max-w-6xl px-4 py-24"><Eyebrow>Dicono di noi</Eyebrow>
+        <div className="mt-8 grid gap-5 md:grid-cols-3">{list.map((r, i) => <blockquote key={i} className="card"><p className="text-cream/80">“{r.text}”</p><footer className="mt-4 text-sm text-gold">{r.author}{r.source && ` · ${r.source}`}</footer></blockquote>)}</div></section>)}</Translated>;
     }
-    case "contacts": return (
+    case "contacts": return <Translated>{(
       <section className="mx-auto grid max-w-6xl gap-10 px-4 py-24 md:grid-cols-2">
         <div><Eyebrow>Vieni a trovarci</Eyebrow><h2 className="text-3xl md:text-5xl">{c.title ?? "Orari e contatti"}</h2>
           <p className="mt-6 text-cream/80">{s.contacts.address}</p><p className="mt-2 whitespace-pre-line text-cream/80">{s.contacts.hours}</p>
@@ -102,7 +103,7 @@ export async function SectionRenderer({ type, c, s }: { type: string; c: C; s: S
             <a className="btn-ghost" href={getMapsDirectionsUrl(s.contacts.address, s.contacts.mapsUrl)} target="_blank" rel="noopener noreferrer">Come arrivare</a>
           </div></div>
         <iframe title="Mappa per raggiungere Vecciarì" src={getMapsEmbedUrl(s.contacts.address)} className="h-80 w-full rounded-2xl border-0" loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
-      </section>);
+      </section>)}</Translated>;
     default: return null;
   }
 }
@@ -110,8 +111,8 @@ export async function SectionRenderer({ type, c, s }: { type: string; c: C; s: S
 export async function PageSections({ slug, s, preview = false }: { slug: string; s: Settings; preview?: boolean }) {
   const page = await db.page.findUnique({ where: { slug }, include: { sections: { orderBy: { position: "asc" } } } });
   if (!page) return null;
-  return <>{page.sections.filter(x => x.enabled).map(x => {
+  return <Translated>{<>{page.sections.filter(x => x.enabled).map(x => {
     const content = (preview && x.draft ? x.draft : x.content) as C;
     return <SectionRenderer key={x.id} type={x.type} c={content} s={s} />;
-  })}</>;
+  })}</>}</Translated>;
 }

@@ -1,3 +1,4 @@
+import Translated from "@/components/public/ServerTranslated";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import CowMap from "@/components/public/CowMap";
@@ -9,7 +10,7 @@ export default async function Carne() {
     db.cut.findMany({ where: { published: true }, orderBy: { position: "asc" } }),
     db.farmingMethod.findMany({ orderBy: { name: "asc" } }),
   ]);
-  return (<>
+  return <Translated>{(<>
     <section className="relative overflow-hidden px-4 py-28 text-center">
       <img src="/brand/fiamma-oro.webp" alt="" className="pointer-events-none absolute left-1/2 top-1/2 h-[140%] -translate-x-1/2 -translate-y-1/2 opacity-[.06]" />
       <p className="text-xs uppercase tracking-[0.4em] text-gold">Cultura della carne</p>
@@ -38,5 +39,5 @@ export default async function Carne() {
       <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{cuts.map(c => (
         <Link key={c.id} href={`/carne/tagli/${c.slug}`} className="card hover:border-gold/60"><h3 className="text-lg">{c.name}</h3><p className="text-sm text-cream/60">{c.anatomy}</p></Link>))}</div>
     </section>
-  </>);
+  </>)}</Translated>;
 }

@@ -1,4 +1,5 @@
 "use client";
+import Translated from "@/components/public/Translated";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import MenuBrowser, { type CartLine } from "@/components/public/MenuBrowser";
@@ -58,7 +59,7 @@ export default function OnlineOrder(p: { menu: MenuData; cooking: string[]; tabl
     ...(p.takeaway ? [{ id: "TAKEAWAY" as const, label: "Asporto" }] : []),
     ...(p.delivery ? [{ id: "DELIVERY" as const, label: "Consegna" }] : []),
   ];
-  return <div className="mx-auto max-w-6xl px-4 py-10">
+  return <Translated>{<div className="mx-auto max-w-6xl px-4 py-10">
     <h1 className="text-4xl md:text-5xl">Il tuo ordine</h1>
     <p className="mt-3 text-sm text-cream/60">Scegli la modalità, aggiungi i prodotti e completa i tuoi dati.</p>
     <div className="my-6 flex flex-wrap gap-3" aria-label="Modalità ordine">{modes.map(m => <button key={m.id} aria-pressed={channel === m.id} disabled={busy} onClick={() => { setChannel(m.id); setError(""); }} className={channel === m.id ? "btn-gold" : "btn-ghost"}>{m.label}</button>)}</div>
@@ -73,5 +74,5 @@ export default function OnlineOrder(p: { menu: MenuData; cooking: string[]; tabl
         </CartPanel>
       </aside>
     </div>
-  </div>;
+  </div>}</Translated>;
 }

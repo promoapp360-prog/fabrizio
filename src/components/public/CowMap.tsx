@@ -1,4 +1,5 @@
 "use client";
+import Translated from "@/components/public/Translated";
 import Link from "next/link";
 import { useState } from "react";
 import { ZONES } from "@/lib/meat-zones";
@@ -14,7 +15,7 @@ export default function CowMap({ cuts }: { cuts: { slug: string; name: string; z
   const [zone, setZone] = useState<string | null>("rib");
   const z = ZONES.find(x => x.id === zone);
   const inZone = cuts.filter(c => c.zone === zone);
-  return (
+  return <Translated>{(
     <div className="grid items-start gap-8 lg:grid-cols-[1.6fr_1fr]">
       <svg viewBox="100 60 640 300" className="w-full" role="group" aria-label="Schema dei tagli del bovino">
         <path d="M150 120 Q120 95 105 110 Q95 140 120 150 L150 160 Z" fill="rgb(var(--c-coal))" stroke="rgb(var(--c-gold) / .4)" />
@@ -38,5 +39,5 @@ export default function CowMap({ cuts }: { cuts: { slug: string; name: string; z
           : <p className="mt-4 text-cream/60">Nessun taglio ancora associato a questa zona.</p>}
         <p className="mt-6 text-xs text-cream/40">Schema semplificato a scopo divulgativo.</p>
       </div>
-    </div>);
+    </div>)}</Translated>;
 }

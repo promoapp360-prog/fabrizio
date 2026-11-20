@@ -1,4 +1,6 @@
 "use client";
+import Translated from "@/components/public/Translated";
+import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import { useLiveCart } from "@/components/public/useLiveCart";
 import { useMenuRefresh } from "@/components/public/useMenuRefresh";
 import { useCallback, useEffect, useState } from "react";
@@ -46,9 +48,9 @@ export default function TableOrder({ token, tableLabel, tableNumber, menu, cooki
   }
 
   const menuNotice = useLiveCart(menu, cart, setCart, "TABLE");
-  return (
+  return <Translated>{(
     <div className="mx-auto min-h-screen max-w-3xl px-4 pb-28">
-      <header className="flex items-center justify-between py-4"><img src={logo} alt="Vecciarì" className="h-12" />{tableLabel && <span className="rounded-full bg-gold px-4 py-1 font-display uppercase text-ink">{tableLabel}</span>}</header>
+      <header className="flex items-center justify-between gap-2 py-4"><img src={logo} alt="Vecciarì" className="h-12 max-w-[45%] object-contain" /><div className="flex items-center gap-2">{tableLabel && <span className="max-w-36 rounded-full bg-gold px-3 py-1 font-display text-sm uppercase text-ink">{tableLabel}</span>}<LanguageSwitcher /></div></header>
       {!orderingOn && <p className="rounded-xl border border-gold/30 p-3 text-sm">Al momento gli ordini dal tavolo non sono attivi: puoi consultare il menu e ordinare con il personale.</p>}
       {menuNotice && <p role="status" className="my-3 rounded-lg border border-gold/30 p-3 text-sm">{menuNotice}</p>}
       {msg && <p role="status" className={`my-3 rounded-xl p-3 ${msg.ok ? "bg-gold text-ink" : "bg-red-900/60"}`}>{msg.text}</p>}
@@ -69,5 +71,5 @@ export default function TableOrder({ token, tableLabel, tableNumber, menu, cooki
         {(["menu", "cart", "status"] as const).map(t => <button key={t} onClick={() => setTab(t)} aria-current={tab === t} className={`py-4 font-display text-sm uppercase ${tab === t ? "text-gold" : "text-cream/70"}`}>
           {t === "menu" ? "Menu" : t === "cart" ? `Carrello${cart.length ? ` (${cart.reduce((s, l) => s + l.quantity, 0)})` : ""}` : "I miei ordini"}</button>)}
       </nav>}
-    </div>);
+    </div>)}</Translated>;
 }
