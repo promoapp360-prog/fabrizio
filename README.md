@@ -31,6 +31,7 @@ Sito pubblico + gestionale per un ristorante di carni alla brace. Un'unica app *
   - Catalogo e prezzi di saldo vengono creati nel conto verificato solo quando il cliente avvia il checkout. Test automatici con richieste simulate, senza addebiti live. Per un collaudo end-to-end usare credenziali test dello stesso cliente in ambiente separato, non quelle live.
   - Le chiavi live sono bloccate nell’anteprima di sviluppo; l’avvio di un checkout live dal browser richiede l’origine pubblica configurata. I webhook e le conferme di pagamenti già aperti restano elaborabili.
   - `PUBLIC_BASE_URL` deve seguire il dominio pubblico effettivo. Eventuali alias pubblicati dello stesso progetto possono essere autorizzati esplicitamente in `PUBLIC_PAYMENT_ORIGINS` (origini HTTPS separate da virgola, nessun wildcard).
+  - Pubblicazione: eseguire sempre `npm ci && npm run build && npm run db:deploy` prima dell'avvio. La configurazione `.replit` contiene già questa sequenza; anche il servizio gestito di un workspace Replit deve usarla, senza omettere le migrazioni. Le migrazioni delle pezzature sono additive e non riconvertono i vecchi ordini.
 - **GA4**: caricato solo dopo consenso cookie. **Google Maps**: embed da URL.
 
 ## Avvio rapido (locale)
