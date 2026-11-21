@@ -639,5 +639,9 @@
   "Riprova": "נסה שוב",
   "Scegli la pezzatura": "בחר מנה",
   "Solo per me": "רק עבורי",
-  "Totale definitivo": "סכום סופי"
+  "Totale definitivo": "סכום סופי",
+  "Apri WhatsApp": "פתח את WhatsApp",
+  "Con Stripe, WhatsApp si apre solo dopo la conferma del pagamento. Alla cassa, il messaggio indica “Da pagare”. Il riepilogo include nome, prodotti e indirizzo di consegna, ma non email o telefono. Il messaggio parte solo se premi “Invia”.": "עם Stripe, WhatsApp נפתח רק לאחר אישור התשלום. בקופה, ההודעה מציינת “לתשלום”. הסיכום כולל שם, מוצרים וכתובת למשלוח, אך לא אימייל או טלפון. ההודעה נשלחת רק אם תלחץ על “שלח”.",
+  "Paga alla cassa": "שלם בקופה",
+  "WhatsApp sarà disponibile dopo la conferma del pagamento online oppure dopo la scelta del pagamento alla cassa.": "WhatsApp יהיה זמין לאחר אישור התשלום המקוון או לאחר בחירת תשלום בקופה."
 }

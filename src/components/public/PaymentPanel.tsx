@@ -3,8 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import Translated from "./Translated";
 import type { OnlinePaymentState } from "@/lib/payment-policy";
 
-export default function PaymentPanel({ id, state, paidWithStripe, onChange, autoStart = false }: {
+export default function PaymentPanel({ id, state, paidWithStripe, onChange, autoStart = false, onCheckoutStart, onCounterChoice }: {
   id: string; state: OnlinePaymentState; paidWithStripe: boolean; onChange: () => void; autoStart?: boolean;
+  onCheckoutStart?: () => void; onCounterChoice?: () => void;
 }) {
   const [busy, setBusy] = useState(false), [error, setError] = useState("");
   const attempted = useRef(false);
@@ -14,6 +15,7 @@ export default function PaymentPanel({ id, state, paidWithStripe, onChange, auto
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoStart, state]);
   async function action(cancel = false) {
+    if (!cancel) onCheckoutStart?.();
     setBusy(true); setError("");
     try {
       const response = await fetch(`/api/order/${id}/checkout`, { method: cancel ? "DELETE" : "POST" });
@@ -42,6 +44,8 @@ export default function PaymentPanel({ id, state, paidWithStripe, onChange, auto
       </button>
       {state === "pending" && <button type="button" className="btn-ghost" disabled={busy} onClick={() => action(true)}>Annulla tentativo online</button>}
     </div>}
+    {onCounterChoice && !["pending", "paid", "refunded", "cancelled"].includes(state) &&
+      <button type="button" className="btn-ghost mt-3" disabled={busy} onClick={onCounterChoice}>Paga alla cassa</button>}
     {error && <p role="alert" className="mt-3 text-sm text-red-300">{error}</p>}
     {(state === "ready" || state === "pending") && <p className="mt-3 text-xs text-cream/60">I dati della carta vengono inseriti soltanto su Stripe. Il ritorno al sito non conferma da solo il pagamento.</p>}
   </section></Translated>;

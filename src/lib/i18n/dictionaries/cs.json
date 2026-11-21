@@ -639,5 +639,9 @@
   "Riprova": "Zkusit znovu",
   "Scegli la pezzatura": "Vyberte porci",
   "Solo per me": "Pouze pro mě",
-  "Totale definitivo": "Konečná částka"
+  "Totale definitivo": "Konečná částka",
+  "Apri WhatsApp": "Otevřít WhatsApp",
+  "Con Stripe, WhatsApp si apre solo dopo la conferma del pagamento. Alla cassa, il messaggio indica “Da pagare”. Il riepilogo include nome, prodotti e indirizzo di consegna, ma non email o telefono. Il messaggio parte solo se premi “Invia”.": "Se službou Stripe se WhatsApp otevře až po potvrzení platby. U pokladny zpráva uvádí “K úhradě”. Souhrn obsahuje jméno, produkty a dodací adresu, nikoli však e-mail nebo telefon. Zpráva se odešle pouze tehdy, pokud stisknete “Odeslat”.",
+  "Paga alla cassa": "Zaplatit u pokladny",
+  "WhatsApp sarà disponibile dopo la conferma del pagamento online oppure dopo la scelta del pagamento alla cassa.": "WhatsApp bude k dispozici po potvrzení online platby nebo po zvolení platby u pokladny."
 }

@@ -639,5 +639,9 @@
   "Riprova": "Обиди се повторно",
   "Scegli la pezzatura": "Избери тежина",
   "Solo per me": "Само за мене",
-  "Totale definitivo": "Конечен износ"
+  "Totale definitivo": "Конечен износ",
+  "Apri WhatsApp": "Отвори WhatsApp",
+  "Con Stripe, WhatsApp si apre solo dopo la conferma del pagamento. Alla cassa, il messaggio indica “Da pagare”. Il riepilogo include nome, prodotti e indirizzo di consegna, ma non email o telefono. Il messaggio parte solo se premi “Invia”.": "Со Stripe, WhatsApp се отвора само по потврда на плаќањето. На каса, пораката означува “За плаќање”. Резимето вклучува име, производи и адреса за достава, но не и е-пошта или телефон. Пораката се испраќа само ако притиснете “Испрати”.",
+  "Paga alla cassa": "Плати на каса",
+  "WhatsApp sarà disponibile dopo la conferma del pagamento online oppure dopo la scelta del pagamento alla cassa.": "WhatsApp ќе биде достапен по потврда на онлајн плаќањето или по избор на плаќање на каса."
 }

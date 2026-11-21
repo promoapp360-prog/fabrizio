@@ -639,5 +639,9 @@
   "Riprova": "Provo përsëri",
   "Scegli la pezzatura": "Zgjidh porcionin",
   "Solo per me": "Vetëm për mua",
-  "Totale definitivo": "Totali përfundimtar"
+  "Totale definitivo": "Totali përfundimtar",
+  "Apri WhatsApp": "Hap WhatsApp",
+  "Con Stripe, WhatsApp si apre solo dopo la conferma del pagamento. Alla cassa, il messaggio indica “Da pagare”. Il riepilogo include nome, prodotti e indirizzo di consegna, ma non email o telefono. Il messaggio parte solo se premi “Invia”.": "Me Stripe, WhatsApp hapet vetëm pas konfirmimit të pagesës. Në arkë, mesazhi tregon “Për t’u paguar”. Përmbledhja përfshin emrin, produktet dhe adresën e dërgesës, por jo emailin ose telefonin. Mesazhi dërgohet vetëm nëse shtypni “Dërgo”.",
+  "Paga alla cassa": "Paguaj në arkë",
+  "WhatsApp sarà disponibile dopo la conferma del pagamento online oppure dopo la scelta del pagamento alla cassa.": "WhatsApp do të jetë i disponueshëm pas konfirmimit të pagesës online ose pas zgjedhjes së pagesës në arkë."
 }

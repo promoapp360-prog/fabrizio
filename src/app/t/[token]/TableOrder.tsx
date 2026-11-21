@@ -14,7 +14,8 @@ import type { MenuData } from "@/lib/menu";
 import { formatEUR } from "@/lib/pricing";
 import OrderDetails, { emptyOrderDetails } from "@/components/public/OrderDetails";
 import { customerOrderSchema } from "@/lib/checkout";
-import { closeWhatsAppDraftWindow, finishWhatsAppDraftWindow, openWhatsAppDraftWindow, orderWhatsAppMessage, whatsappDraftUrl } from "@/lib/whatsapp-draft";
+import { saveOrderWhatsAppDraft } from "@/lib/order-whatsapp";
+import { OrderWhatsAppNotice } from "@/components/public/ReceiptWhatsApp";
 
 const LABEL: Record<string, string> = { RECEIVED: "Ricevuto", CONFIRMED: "Confermato", PREPARING: "In preparazione", READY: "Pronto", SERVED: "Servito", CANCELLED: "Annullato" };
 type O = { id: string; number: number; status: string; estimatedCents: number; finalCents: number | null; hasWeighted: boolean;
@@ -38,7 +39,6 @@ export default function TableOrder({ token, tableLabel, tableNumber, menu, cooki
   async function submit() {
     if (!customerOrderSchema.safeParse(details).success) { setMsg({ ok: false, text: "Inserisci nome, email e telefono e accetta l’informativa privacy." }); return; }
     if (!party.ready || !party.confirmed) { setMsg({ ok: false, text: "Indica per quante persone stai ordinando e conferma i coperti." }); return; }
-    const whatsappWindow = whatsapp ? openWhatsAppDraftWindow() : null;
     setBusy(true); setMsg(null);
     try {
       const r = await fetch(`/api/table/${token}/order`, { method: "POST", headers: { "Content-Type": "application/json" },
@@ -47,17 +47,15 @@ export default function TableOrder({ token, tableLabel, tableNumber, menu, cooki
           idempotencyKey: idem, notes: notes || undefined, items: cart.map(l => ({ productId: l.productId, quantity: l.quantity, cooking: l.cooking, optionIds: l.optionIds, notes: l.notes, weightGrams: l.weightGrams })) }) });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error ?? "Errore");
-      finishWhatsAppDraftWindow(whatsappWindow, whatsapp, orderWhatsAppMessage({
-        number: j.number, channel: "TABLE", tableNumber: Number(details.tableNumber),
-        pickupName: details.name,
-        items: cart.map(line => ({ name: line.name, quantity: line.quantity, cooking: line.cooking, options: line.optionNames, notes: line.notes, weightGrams: line.weightGrams })),
-        totalCents: j.totalCents, coverCount: j.coverCount, coverUnitCents: j.coverUnitCents,
-        payment: details.payment, weighted: false, notes,
-      }));
+      if (whatsapp) saveOrderWhatsAppDraft(j.id, {
+        createdAt: Date.now(), payment: details.payment, autoRequested: true, attemptedStates: [], returnPath: `/t/${token}`,
+        details: { pickupName: details.name, notes,
+          items: cart.map(line => ({ name: line.name, quantity: line.quantity, cooking: line.cooking, options: line.optionNames, notes: line.notes, weightGrams: line.weightGrams })) },
+      });
       setCart([]); setNotes(""); setIdem(crypto.randomUUID()); setMsg({ ok: true, text: `Ordine n° ${j.number} inviato. ${j.emailStatus === "sent" ? "Conferma email inviata." : "Invio email non ancora disponibile: conserva il numero d’ordine."}` }); setTab("status"); refresh();
       party.refresh();
-      if (details.payment === "STRIPE" && j.totalCents === totalCents) router.push(`/ordine/${j.id}?pay=online`);
-    } catch (e) { closeWhatsAppDraftWindow(whatsappWindow); party.refresh(); setMsg({ ok: false, text: e instanceof Error ? e.message : "Connessione assente, riprova" }); }
+      router.push(`/ordine/${j.id}?whatsapp=1${details.payment === "STRIPE" && j.totalCents === totalCents ? "&pay=online" : ""}`);
+    } catch (e) { party.refresh(); setMsg({ ok: false, text: e instanceof Error ? e.message : "Connessione assente, riprova" }); }
     finally { setBusy(false); }
   }
 
@@ -73,7 +71,7 @@ export default function TableOrder({ token, tableLabel, tableNumber, menu, cooki
      {tab === "cart" && party.confirmed && <div className="mt-4"><CartPanel cart={cart} setCart={setCart} notes={notes} setNotes={setNotes} onSubmit={submit} busy={busy}
        disabled={!party.ready} coverCount={party.coverCount} coverUnitCents={party.coverUnitCents}
        cta={details.payment === "STRIPE" ? "Conferma ordine e paga online" : "Conferma ordine · paga alla cassa"}><OrderDetails value={details} onChange={setDetails} channel="TABLE" fixedTable />
-       {whatsapp && <p className="mt-3 text-xs text-cream/60">Dopo la registrazione proveremo ad aprire WhatsApp con numero, nome e riepilogo. Email e telefono non sono inseriti. Il messaggio parte solo se premi “Invia”.</p>}
+        {whatsapp && <OrderWhatsAppNotice />}
      </CartPanel></div>}
       {tab === "status" && <div className="mt-4 space-y-3">{!orders.length && <p className="text-cream/60">Nessun ordine ancora inviato da questo tavolo.</p>}
         {orders.map(o => <div key={o.id} className="card"><div className="flex justify-between"><b className="font-display uppercase">Ordine n° {o.number}</b><span className="text-gold">{LABEL[o.status]}</span></div>
@@ -84,13 +82,7 @@ export default function TableOrder({ token, tableLabel, tableNumber, menu, cooki
           {o.coverCount > 0 && <p className="mt-2 text-sm"><span>Coperti</span>: {o.coverCount} × {formatEUR(o.coverUnitCents)}</p>}
            <p className="mt-1 text-sm">{o.finalCents != null ? `Totale: ${formatEUR(o.finalCents)}` : `Totale indicativo: ${formatEUR(o.estimatedCents)}`}</p>
            <Link href={`/ordine/${o.id}`} className="mt-3 inline-block text-sm text-gold underline">Riepilogo e pagamento</Link>
-           {whatsapp && <a className="mt-3 inline-block text-sm text-gold underline" href={whatsappDraftUrl(whatsapp, orderWhatsAppMessage({
-             number: o.number, channel: "TABLE", tableNumber,
-             items: o.items.map(item => ({ name: item.nameSnapshot, quantity: item.quantity, cooking: item.cooking,
-               weightGrams: o.pricingPolicy === "FIXED_PORTIONS" ? item.estWeightGrams : item.actualWeightGrams })),
-             coverCount: o.coverCount, coverUnitCents: o.coverUnitCents,
-             totalCents: o.finalCents ?? o.estimatedCents, weighted: o.hasWeighted && o.finalCents == null,
-           })) ?? undefined} target="_blank" rel="noopener noreferrer">Se WhatsApp non si è aperto, apri il riepilogo</a>}</div>)}</div>}
+            </div>)}</div>}
       {orderingOn && <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-3 border-t border-cream/10 bg-ink/95 backdrop-blur" aria-label="Tavolo">
         {(["menu", "cart", "status"] as const).map(t => <button key={t} onClick={() => setTab(t)} aria-current={tab === t} className={`py-4 font-display text-sm uppercase ${tab === t ? "text-gold" : "text-cream/70"}`}>
           {t === "menu" ? "Menu" : t === "cart" ? `Carrello${cart.length ? ` (${cart.reduce((s, l) => s + l.quantity, 0)})` : ""}` : "I miei ordini"}</button>)}

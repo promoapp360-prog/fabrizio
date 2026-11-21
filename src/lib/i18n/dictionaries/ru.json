@@ -639,5 +639,9 @@
   "Riprova": "Повторить попытку",
   "Scegli la pezzatura": "Выберите порцию",
   "Solo per me": "Только для меня",
-  "Totale definitivo": "Окончательная сумма"
+  "Totale definitivo": "Окончательная сумма",
+  "Apri WhatsApp": "Открыть WhatsApp",
+  "Con Stripe, WhatsApp si apre solo dopo la conferma del pagamento. Alla cassa, il messaggio indica “Da pagare”. Il riepilogo include nome, prodotti e indirizzo di consegna, ma non email o telefono. Il messaggio parte solo se premi “Invia”.": "В Stripe WhatsApp открывается только после подтверждения оплаты. На кассе сообщение указывает “К оплате”. Сводка включает имя, товары и адрес доставки, но не электронную почту или телефон. Сообщение отправляется, только если вы нажмете “Отправить”.",
+  "Paga alla cassa": "Оплата на кассе",
+  "WhatsApp sarà disponibile dopo la conferma del pagamento online oppure dopo la scelta del pagamento alla cassa.": "WhatsApp будет доступен после подтверждения онлайн-оплаты или выбора оплаты на кассе."
 }

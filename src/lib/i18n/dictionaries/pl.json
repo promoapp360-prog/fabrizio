@@ -639,5 +639,9 @@
   "Riprova": "Ponów próbę",
   "Scegli la pezzatura": "Wybierz porcję",
   "Solo per me": "Tylko dla mnie",
-  "Totale definitivo": "Suma ostateczna"
+  "Totale definitivo": "Suma ostateczna",
+  "Apri WhatsApp": "Otwórz WhatsApp",
+  "Con Stripe, WhatsApp si apre solo dopo la conferma del pagamento. Alla cassa, il messaggio indica “Da pagare”. Il riepilogo include nome, prodotti e indirizzo di consegna, ma non email o telefono. Il messaggio parte solo se premi “Invia”.": "W przypadku Stripe WhatsApp otwiera się dopiero po potwierdzeniu płatności. Przy kasie komunikat wskazuje “Do zapłaty”. Podsumowanie zawiera imię i nazwisko, produkty oraz adres dostawy, ale nie e-mail ani telefon. Wiadomość zostanie wysłana tylko po naciśnięciu “Wyślij”.",
+  "Paga alla cassa": "Zapłać przy kasie",
+  "WhatsApp sarà disponibile dopo la conferma del pagamento online oppure dopo la scelta del pagamento alla cassa.": "WhatsApp będzie dostępny po potwierdzeniu płatności online lub po wybraniu opcji płatności przy kasie."
 }

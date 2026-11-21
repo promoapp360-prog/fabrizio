@@ -639,5 +639,9 @@
   "Riprova": "重试",
   "Scegli la pezzatura": "选择规格",
   "Solo per me": "仅我一人",
-  "Totale definitivo": "最终总额"
+  "Totale definitivo": "最终总额",
+  "Apri WhatsApp": "打开 WhatsApp",
+  "Con Stripe, WhatsApp si apre solo dopo la conferma del pagamento. Alla cassa, il messaggio indica “Da pagare”. Il riepilogo include nome, prodotti e indirizzo di consegna, ma non email o telefono. Il messaggio parte solo se premi “Invia”.": "通过 Stripe，WhatsApp 仅在确认付款后才会打开。在收银台，消息显示为“待付款”。摘要包含姓名、产品和送货地址，但不包含电子邮件或电话。仅当你按下“发送”时，消息才会发出。",
+  "Paga alla cassa": "在收银台付款",
+  "WhatsApp sarà disponibile dopo la conferma del pagamento online oppure dopo la scelta del pagamento alla cassa.": "WhatsApp 将在确认在线付款或选择在收银台付款后可用。"
 }

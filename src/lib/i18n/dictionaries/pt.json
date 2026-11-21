@@ -639,5 +639,9 @@
   "Riprova": "Tentar novamente",
   "Scegli la pezzatura": "Escolha o tamanho",
   "Solo per me": "Apenas para mim",
-  "Totale definitivo": "Total definitivo"
+  "Totale definitivo": "Total definitivo",
+  "Apri WhatsApp": "Abrir WhatsApp",
+  "Con Stripe, WhatsApp si apre solo dopo la conferma del pagamento. Alla cassa, il messaggio indica “Da pagare”. Il riepilogo include nome, prodotti e indirizzo di consegna, ma non email o telefono. Il messaggio parte solo se premi “Invia”.": "Com Stripe, o WhatsApp abre apenas após a confirmação do pagamento. No caixa, a mensagem indica “A pagar”. O resumo inclui nome, produtos e endereço de entrega, mas não e-mail ou telefone. A mensagem só é enviada se você pressionar “Enviar”.",
+  "Paga alla cassa": "Pagar no caixa",
+  "WhatsApp sarà disponibile dopo la conferma del pagamento online oppure dopo la scelta del pagamento alla cassa.": "O WhatsApp estará disponível após a confirmação do pagamento online ou após a escolha do pagamento no caixa."
 }

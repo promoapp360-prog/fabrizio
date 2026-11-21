@@ -95,8 +95,10 @@ export function orderWhatsAppMessage(input: {
   if (input.notes?.trim()) lines.push(`Note per la cucina: ${input.notes.trim()}`);
   if (input.coverCount) lines.push(`Coperti: ${input.coverCount} × ${formatEUR(input.coverUnitCents ?? 0)}`);
   lines.push(`Totale${input.weighted ? " indicativo" : ""}: ${formatEUR(input.totalCents)}`,
-    input.payment === "STRIPE_PAID" ? "Pagamento online confermato da Stripe." :
-    input.payment === "CASH_PAID" ? "Pagamento registrato dal personale." :
-    input.payment === "STRIPE" ? "Pagamento online da completare su Stripe." : "Pagamento alla cassa.");
+    input.payment === "STRIPE_PAID" ? "Stato pagamento: PAGATO (Stripe)." :
+    input.payment === "CASH_PAID" ? "Stato pagamento: PAGATO (incasso registrato dal personale)." :
+    input.payment === "STRIPE" ? "Stato pagamento: DA PAGARE (pagamento online non confermato)." :
+    input.channel === "TAKEAWAY" ? "Stato pagamento: DA PAGARE AL RITIRO." :
+    input.channel === "DELIVERY" ? "Stato pagamento: DA PAGARE ALLA CONSEGNA." : "Stato pagamento: DA PAGARE ALLA CASSA.");
   return lines.join("\n");
 }

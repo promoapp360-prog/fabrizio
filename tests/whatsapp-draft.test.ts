@@ -23,7 +23,7 @@ describe("WhatsApp draft links", () => {
     expect(message).toContain("Tavolo: 7");
     expect(message).toContain("- 2 × Costata (Media, Patate, senza sale)");
     expect(message).toContain("Note per la cucina: Allergia dichiarata");
-    expect(message).toContain("Pagamento alla cassa.");
+    expect(message).toContain("Stato pagamento: DA PAGARE ALLA CASSA.");
     expect(message).not.toMatch(/email|telefono/i);
   });
 
@@ -49,5 +49,14 @@ describe("WhatsApp draft links", () => {
     expect(message).toContain("VC-123");
     expect(message).toContain("ore 20:00, 4 persone");
     expect(message).toContain("richiesta di prenotazione");
+  });
+  it.each([
+    ["STRIPE_PAID", "PAGATO (Stripe)"],
+    ["CASH_PAID", "PAGATO (incasso registrato dal personale)"],
+    ["STRIPE", "DA PAGARE (pagamento online non confermato)"],
+  ])("labels the real payment state %s explicitly", (payment, expected) => {
+    const message = orderWhatsAppMessage({ number: 42, channel: "TABLE", items: [], totalCents: 4200, payment });
+    expect(message).toContain(`Stato pagamento: ${expected}.`);
+    if (payment === "STRIPE") expect(message).not.toContain("Stato pagamento: PAGATO");
   });
 });
