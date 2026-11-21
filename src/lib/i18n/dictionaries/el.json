@@ -643,5 +643,6 @@
   "Apri WhatsApp": "Άνοιγμα WhatsApp",
   "Con Stripe, WhatsApp si apre solo dopo la conferma del pagamento. Alla cassa, il messaggio indica “Da pagare”. Il riepilogo include nome, prodotti e indirizzo di consegna, ma non email o telefono. Il messaggio parte solo se premi “Invia”.": "Με το Stripe, το WhatsApp ανοίγει μόνο μετά την επιβεβαίωση της πληρωμής. Στο ταμείο, το μήνυμα αναφέρει “Προς πληρωμή”. Η σύνοψη περιλαμβάνει όνομα, προϊόντα και διεύθυνση παράδοσης, αλλά όχι email ή τηλέφωνο. Το μήνυμα αποστέλλεται μόνο αν πατήσετε “Αποστολή”.",
   "Paga alla cassa": "Πληρωμή στο ταμείο",
-  "WhatsApp sarà disponibile dopo la conferma del pagamento online oppure dopo la scelta del pagamento alla cassa.": "Το WhatsApp θα είναι διαθέσιμο μετά την επιβεβαίωση της ηλεκτρονικής πληρωμής ή μετά την επιλογή πληρωμής στο ταμείο."
+  "WhatsApp sarà disponibile dopo la conferma del pagamento online oppure dopo la scelta del pagamento alla cassa.": "Το WhatsApp θα είναι διαθέσιμο μετά την επιβεβαίωση της ηλεκτρονικής πληρωμής ή μετά την επιλογή πληρωμής στο ταμείο.",
+  "In anteprima i pagamenti Stripe sono disattivati. Per pagare usa il sito pubblicato.": "Στην προεπισκόπηση, οι πληρωμές Stripe είναι απενεργοποιημένες. Για να πληρώσετε, χρησιμοποιήστε τον δημοσιευμένο ιστότοπο."
 }

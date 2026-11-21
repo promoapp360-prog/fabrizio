@@ -17,10 +17,12 @@ export default function OrderDetails({ value, onChange, channel, prepMinutes = 3
   channel: "TABLE" | "TAKEAWAY" | "DELIVERY"; prepMinutes?: number; fixedTable?: boolean;
 }) {
   const [online, setOnline] = useState(false);
+  const [previewBlocked, setPreviewBlocked] = useState(false);
   useEffect(() => {
     let active = true;
     const refresh = () => fetch("/api/payments/config", { cache: "no-store" }).then(r => r.ok ? r.json() : { online: false })
-      .then(data => { if (active) setOnline(data.online === true); }).catch(() => { if (active) setOnline(false); });
+      .then(data => { if (active) { setOnline(data.online === true); setPreviewBlocked(data.previewPaymentsBlocked === true); } })
+      .catch(() => { if (active) { setOnline(false); setPreviewBlocked(false); } });
     refresh(); const timer = setInterval(refresh, 30000);
     return () => { active = false; clearInterval(timer); };
   }, []);
@@ -46,7 +48,9 @@ export default function OrderDetails({ value, onChange, channel, prepMinutes = 3
       <legend className="px-1 font-display uppercase">Pagamento</legend>
       <label className="flex items-center gap-2 text-sm text-gold"><input type="radio" name="order-payment" checked={value.payment === "AT_COUNTER"} onChange={() => set("payment", "AT_COUNTER")} />Alla cassa</label>
       {online && <label className="mt-3 flex items-center gap-2 text-sm"><input type="radio" name="order-payment" checked={value.payment === "STRIPE"} onChange={() => set("payment", "STRIPE")} />Paga online con Stripe</label>}
-      <p className="mt-3 text-sm text-cream/70">{online ? "Puoi pagare subito il totale definitivo oppure scegliere la cassa." : "Pagamento online momentaneamente non disponibile."}</p>
+      <p className="mt-3 text-sm text-cream/70">{online ? "Puoi pagare subito il totale definitivo oppure scegliere la cassa."
+        : previewBlocked ? "In anteprima i pagamenti Stripe sono disattivati. Per pagare usa il sito pubblicato."
+        : "Pagamento online momentaneamente non disponibile."}</p>
     </fieldset>
     <label className="flex items-start gap-2 text-sm"><input className="mt-1" type="checkbox" required checked={value.privacy} onChange={e => set("privacy", e.target.checked)} />
       <span>Ho letto l’<a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline">informativa privacy</a> e autorizzo il trattamento dei dati necessario all’ordine. *</span></label>

@@ -14,13 +14,15 @@ export function orderMessagePayment(order: {
     return order.payments.some(payment => payment.status === "PAID" && payment.method === "STRIPE") ? "STRIPE_PAID" : "CASH_PAID";
   if (order.onlinePayment === "paid") return null;
   if (order.onlinePayment === "pending" || order.payments.some(payment => payment.status === "PENDING")) return null;
-  if (choice === "STRIPE" || choice === "server" && order.paymentMethod === "STRIPE") return null;
-  return choice === "AT_COUNTER" || ["AT_COUNTER", "ON_PICKUP", "CASH"].includes(order.paymentMethod) ? "AT_COUNTER" : null;
+  // The order form's default method is not a completed payment step.
+  // Cash must be explicitly confirmed on the receipt before offering WhatsApp.
+  return choice === "AT_COUNTER" ? "AT_COUNTER" : null;
 }
 
 export type OrderWhatsAppDraft = {
   createdAt: number;
   payment: "STRIPE" | "AT_COUNTER";
+  counterConfirmed?: boolean;
   autoRequested: boolean;
   attemptedStates: OrderMessagePayment[];
   details?: { pickupName: string; address?: string; notes: string; items: WhatsAppOrderLine[] };
@@ -28,6 +30,11 @@ export type OrderWhatsAppDraft = {
 };
 const key = (id: string) => `vecciari-order-whatsapp:${id}`;
 const states: OrderMessagePayment[] = ["STRIPE_PAID", "CASH_PAID", "AT_COUNTER"];
+
+export function initialReceiptPaymentChoice(draft: OrderWhatsAppDraft | null, query: URLSearchParams): OrderPaymentChoice {
+  if (query.get("pay") === "online" || query.has("pagamento") || draft?.payment === "STRIPE") return "STRIPE";
+  return draft?.counterConfirmed === true ? "AT_COUNTER" : "server";
+}
 
 export function readOrderWhatsAppDraft(id: string): OrderWhatsAppDraft | null {
   try {

@@ -10,7 +10,7 @@ export default function PaymentPanel({ id, state, paidWithStripe, onChange, auto
   const [busy, setBusy] = useState(false), [error, setError] = useState("");
   const attempted = useRef(false);
   useEffect(() => {
-    if (autoStart && state === "ready" && !attempted.current) { attempted.current = true; void action(); }
+    if (autoStart && (state === "ready" || state === "pending") && !attempted.current) { attempted.current = true; void action(); }
     // One automatic attempt only; retry remains an explicit customer action.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoStart, state]);

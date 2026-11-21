@@ -25,6 +25,7 @@ beforeEach(() => {
   vi.stubEnv("STRIPE_WEBHOOK_SECRET", "whsec_fixture_not_real");
   vi.stubEnv("STRIPE_EXPECTED_ACCOUNT_ID", "acct_fixture_not_real");
   vi.stubEnv("PUBLIC_BASE_URL", "https://restaurant.example");
+  vi.stubEnv("PUBLIC_PAYMENT_ORIGINS", "");
   order = { id: "order_fixture", number: 42, status: "CONFIRMED", hasWeighted: true, finalCents: 4200, payments: [] };
   session = { id: "cs_test_fixture", status: "open", payment_status: "unpaid", amount_total: 4200, currency: "eur",
     payment_intent: "pi_fixture", url: "https://checkout.stripe.com/c/pay/fixture", livemode: false,
@@ -66,6 +67,31 @@ describe("checkout e incassi: provider e database simulati", () => {
     addPending().status = "PAID";
     await expect(createCheckout(order.id)).rejects.toThrow();
     expect(m.stripe).not.toHaveBeenCalled();
+  });
+  it("ritorna sul medesimo alias autorizzato preservando la sessione del cliente", async () => {
+    vi.stubEnv("PUBLIC_PAYMENT_ORIGINS", "https://alias.restaurant.example");
+    const origin = requirePaymentOrigin(new Request("https://alias.restaurant.example/api", { headers: { origin: "https://alias.restaurant.example" } }));
+    await createCheckout(order.id, origin);
+    const call = m.stripe.mock.calls.find(([path]) => path === "/checkout/sessions")!;
+    expect(call[1].success_url).toBe("https://alias.restaurant.example/ordine/order_fixture?pagamento=verifica");
+    expect(call[1].cancel_url).toBe("https://alias.restaurant.example/ordine/order_fixture?pagamento=annullato");
+  });
+  it("rifiuta domini di ritorno arbitrari prima di creare un tentativo di pagamento", async () => {
+    await expect(createCheckout(order.id, "https://outside.example")).rejects.toThrow("Origine");
+    expect(m.stripe).not.toHaveBeenCalled(); expect(m.db.payment.create).not.toHaveBeenCalled();
+  });
+  it("conserva il collaudo con chiave test sul dominio di anteprima conosciuto", async () => {
+    vi.stubEnv("NODE_ENV", "development"); vi.stubEnv("REPLIT_DEV_DOMAIN", "preview.restaurant.example");
+    const origin = requirePaymentOrigin(new Request("https://preview.restaurant.example/api", { headers: { origin: "https://preview.restaurant.example" } }));
+    await createCheckout(order.id, origin);
+    const call = m.stripe.mock.calls.find(([path]) => path === "/checkout/sessions")!;
+    expect(call[1].success_url).toBe("https://preview.restaurant.example/ordine/order_fixture?pagamento=verifica");
+  });
+  it("recupera una sessione già aperta senza creare un secondo pagamento", async () => {
+    addPending();
+    expect(await createCheckout(order.id)).toEqual({ url: session.url });
+    expect(m.session).toHaveBeenCalledWith(session.id);
+    expect(m.db.payment.create).not.toHaveBeenCalled();
   });
   it("non accetta prezzi Stripe diversi dal saldo canonico", async () => {
     m.stripe.mockResolvedValue({ data: [{ id: "price_fixture", currency: "usd", unit_amount: 1, product: "other", type: "one_time" }] });

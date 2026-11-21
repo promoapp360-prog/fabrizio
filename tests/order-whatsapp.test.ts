@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { orderMessagePayment, readOrderWhatsAppDraft, saveOrderWhatsAppDraft } from "../src/lib/order-whatsapp";
+import { initialReceiptPaymentChoice, orderMessagePayment, readOrderWhatsAppDraft, saveOrderWhatsAppDraft } from "../src/lib/order-whatsapp";
 import type { OnlinePaymentState } from "../src/lib/payment-policy";
 
 const order = (overrides = {}) => ({
@@ -9,6 +9,13 @@ const order = (overrides = {}) => ({
 afterEach(() => vi.unstubAllGlobals());
 
 describe("WhatsApp after payment", () => {
+  it("does not mistake an old cash default for a completed payment step", () => {
+    const draft = { createdAt: Date.now(), payment: "AT_COUNTER" as const, autoRequested: true, attemptedStates: [] };
+    expect(initialReceiptPaymentChoice(draft, new URLSearchParams())).toBe("server");
+    expect(initialReceiptPaymentChoice({ ...draft, counterConfirmed: true }, new URLSearchParams())).toBe("AT_COUNTER");
+    expect(initialReceiptPaymentChoice({ ...draft, counterConfirmed: true }, new URLSearchParams("pay=online"))).toBe("STRIPE");
+    expect(initialReceiptPaymentChoice({ ...draft, counterConfirmed: true }, new URLSearchParams("pagamento=verifica"))).toBe("STRIPE");
+  });
   it("does not send before Stripe payment, even after a return URL or an unsuccessful attempt", () => {
     vi.stubGlobal("window", { location: { search: "?pagamento=verifica&paid=true" } });
     expect(orderMessagePayment(order())).toBeNull();
@@ -19,8 +26,9 @@ describe("WhatsApp after payment", () => {
     expect(orderMessagePayment(order({ onlinePayment: "paid", payments: [{ status: "PAID", method: "STRIPE" }] }))).toBe("STRIPE_PAID");
     expect(orderMessagePayment(order({ onlinePayment: "paid", payments: [{ status: "PAID", method: "CASH" }] }))).toBe("CASH_PAID");
   });
-  it.each(["AT_COUNTER", "ON_PICKUP"])("labels deferred %s as unpaid, never paid", paymentMethod => {
-    expect(orderMessagePayment(order({ paymentMethod }))).toBe("AT_COUNTER");
+  it.each(["AT_COUNTER", "ON_PICKUP"])("requires a final cash choice even if the order defaults to %s", paymentMethod => {
+    expect(orderMessagePayment(order({ paymentMethod }))).toBeNull();
+    expect(orderMessagePayment(order({ paymentMethod }), "AT_COUNTER")).toBe("AT_COUNTER");
     expect(orderMessagePayment(order({ paymentMethod }), "STRIPE")).toBeNull();
   });
   it("allows an explicit cash choice but not while Stripe is still pending", () => {

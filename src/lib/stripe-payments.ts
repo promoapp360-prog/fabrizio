@@ -6,13 +6,17 @@ import { onlinePaymentState, onlinePaymentsAvailable } from "./payment-policy";
 import { getCheckoutSession, STRIPE_APPLICATION, stripeRequest, StripeProviderError, type StripeSession, type StripeEvent } from "./stripe-api";
 import { sendOrderEmail } from "./order-email";
 
-export function requirePaymentOrigin(req: Request) {
-  const published = [process.env.PUBLIC_BASE_URL, ...(process.env.PUBLIC_PAYMENT_ORIGINS ?? "").split(",")]
+function publishedPaymentOrigins() {
+  return [process.env.PUBLIC_BASE_URL, ...(process.env.PUBLIC_PAYMENT_ORIGINS ?? "").split(",")]
     .filter((value): value is string => !!value?.trim()).map(value => {
       const url = new URL(value.trim());
       if (url.protocol !== "https:") throw new HttpError(503, "Indirizzo pubblico di pagamento non configurato correttamente.");
       return url.origin;
     });
+}
+
+export function requirePaymentOrigin(req: Request) {
+  const published = publishedPaymentOrigins();
   const allowed = [...published];
   if (/^(sk|rk)_live_/.test(process.env.STRIPE_SECRET_KEY ?? "") && !published.includes(req.headers.get("origin") ?? ""))
     throw new HttpError(503, "Pagamento online momentaneamente non disponibile.");
@@ -21,6 +25,7 @@ export function requirePaymentOrigin(req: Request) {
     if (process.env.REPLIT_DEV_DOMAIN) allowed.push(`https://${process.env.REPLIT_DEV_DOMAIN}`);
   }
   if (!allowed.includes(req.headers.get("origin") ?? "")) throw new HttpError(403, "Origine non valida");
+  return req.headers.get("origin")!;
 }
 
 async function priceForAmount(amount: number) {
@@ -50,8 +55,14 @@ async function priceForAmount(amount: number) {
 }
 
 /** Una sola prenotazione pagamento per ordine, serializzata con cassa e pesature. */
-export async function createCheckout(orderId: string) {
+export async function createCheckout(orderId: string, requestedReturnOrigin?: string) {
   if (!onlinePaymentsAvailable()) throw new HttpError(503, "Pagamento online non ancora configurato");
+  const published = publishedPaymentOrigins();
+  const returnOrigin = requestedReturnOrigin ?? published[0];
+  const previewOrigin = process.env.NODE_ENV !== "production" && process.env.REPLIT_DEV_DOMAIN
+    ? `https://${process.env.REPLIT_DEV_DOMAIN}` : null;
+  if (!returnOrigin || !published.includes(returnOrigin) && returnOrigin !== previewOrigin)
+    throw new HttpError(403, "Origine non valida");
   const settings = await getSettings();
   if (!settings.ordering.stripeEnabled) throw new HttpError(503, "Pagamento online sospeso dal ristorante");
   const initial = await db.order.findUnique({ where: { id: orderId }, include: { payments: true } });
@@ -94,8 +105,6 @@ export async function createCheckout(orderId: string) {
     await db.payment.updateMany({ where: { id: payment.id, status: "PENDING", externalRef: null }, data: { status: "FAILED" } });
     throw new HttpError(409, "Tentativo scaduto. Premi nuovamente Paga online per riprovare.");
   }
-  const base = new URL(process.env.PUBLIC_BASE_URL!);
-  if (base.protocol !== "https:") throw new HttpError(503, "Indirizzo pubblico non configurato");
   if (!price) throw new HttpError(409, "Pagamento aggiornato: ricarica il riepilogo.");
   const session = await stripeRequest<StripeSession>("/checkout/sessions", {
     mode: "payment", "payment_method_types[0]": "card",
@@ -105,8 +114,8 @@ export async function createCheckout(orderId: string) {
     "payment_intent_data[metadata][application]": STRIPE_APPLICATION,
     "payment_intent_data[metadata][orderId]": orderId, "payment_intent_data[metadata][paymentId]": payment.id,
     "payment_intent_data[description]": `Vecciarì — ordine n° ${reservation.number}`,
-    success_url: `${base.origin}/ordine/${orderId}?pagamento=verifica`,
-    cancel_url: `${base.origin}/ordine/${orderId}?pagamento=annullato`,
+    success_url: `${returnOrigin}/ordine/${orderId}?pagamento=verifica`,
+    cancel_url: `${returnOrigin}/ordine/${orderId}?pagamento=annullato`,
     expires_at: Math.floor(payment.createdAt.getTime() / 1000) + 31 * 60,
   }, `vecciari-checkout-${payment.id}`);
   if (!session.url || !session.url.startsWith("https://checkout.stripe.com/")) throw new HttpError(503, "Checkout Stripe non disponibile");

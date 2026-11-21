@@ -643,5 +643,6 @@
   "Apri WhatsApp": "Deschide WhatsApp",
   "Con Stripe, WhatsApp si apre solo dopo la conferma del pagamento. Alla cassa, il messaggio indica “Da pagare”. Il riepilogo include nome, prodotti e indirizzo di consegna, ma non email o telefono. Il messaggio parte solo se premi “Invia”.": "Cu Stripe, WhatsApp se deschide doar după confirmarea plății. La casă, mesajul indică “De plătit”. Rezumatul include numele, produsele și adresa de livrare, dar nu și e-mailul sau telefonul. Mesajul se trimite doar dacă apeși “Trimite”.",
   "Paga alla cassa": "Plătește la casă",
-  "WhatsApp sarà disponibile dopo la conferma del pagamento online oppure dopo la scelta del pagamento alla cassa.": "WhatsApp va fi disponibil după confirmarea plății online sau după alegerea plății la casă."
+  "WhatsApp sarà disponibile dopo la conferma del pagamento online oppure dopo la scelta del pagamento alla cassa.": "WhatsApp va fi disponibil după confirmarea plății online sau după alegerea plății la casă.",
+  "In anteprima i pagamenti Stripe sono disattivati. Per pagare usa il sito pubblicato.": "În previzualizare, plățile Stripe sunt dezactivate. Pentru a plăti, utilizați site-ul publicat."
 }

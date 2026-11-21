@@ -5,7 +5,7 @@ import Translated from "./Translated";
 import PaymentPanel from "./PaymentPanel";
 import type { OnlinePaymentState } from "@/lib/payment-policy";
 import { FIXED_PORTIONS } from "@/lib/portions";
-import { orderMessagePayment, readOrderWhatsAppDraft, saveOrderWhatsAppDraft,
+import { initialReceiptPaymentChoice, orderMessagePayment, readOrderWhatsAppDraft, saveOrderWhatsAppDraft,
   type OrderPaymentChoice, type OrderWhatsAppDraft } from "@/lib/order-whatsapp";
 import { finishWhatsAppDraftWindow, openWhatsAppDraftWindow, orderWhatsAppMessage, whatsappDraftUrl } from "@/lib/whatsapp-draft";
 
@@ -33,9 +33,8 @@ export default function ReceiptWhatsApp({ id, order, whatsapp, verified, onChang
   useEffect(() => {
     const saved = readOrderWhatsAppDraft(id);
     const query = new URLSearchParams(window.location.search);
-    const returningFromStripe = query.has("pagamento");
     setDraft(saved);
-    setChoice(query.get("pay") === "online" || returningFromStripe ? "STRIPE" : saved?.payment ?? "server");
+    setChoice(initialReceiptPaymentChoice(saved, query));
     setAutoStart(query.get("pay") === "online");
     setAutoRequested(!!saved?.autoRequested || query.get("whatsapp") === "1" || query.get("pagamento") === "verifica");
     setHydrated(true);
@@ -78,7 +77,7 @@ export default function ReceiptWhatsApp({ id, order, whatsapp, verified, onChang
     setChoice(next);
     const saved: OrderWhatsAppDraft = {
       ...(readOrderWhatsAppDraft(id) ?? { createdAt: Date.now(), autoRequested: true, attemptedStates: [] }),
-      payment: next,
+      payment: next, counterConfirmed: next === "AT_COUNTER",
     };
     saveOrderWhatsAppDraft(id, saved); setDraft(saved); setAutoRequested(true);
     if (next === "AT_COUNTER") {
@@ -93,7 +92,7 @@ export default function ReceiptWhatsApp({ id, order, whatsapp, verified, onChang
     <PaymentPanel id={id} state={order.onlinePayment} autoStart={hydrated && autoStart}
       paidWithStripe={order.payments.some(entry => entry.status === "PAID" && entry.method === "STRIPE")} onChange={onChange}
       onCheckoutStart={() => choosePayment("STRIPE")}
-      onCounterChoice={choice === "STRIPE" || choice === "server" && order.paymentMethod === "STRIPE" ? () => choosePayment("AT_COUNTER") : undefined} />
+      onCounterChoice={choice !== "AT_COUNTER" ? () => choosePayment("AT_COUNTER") : undefined} />
     {whatsapp && url && <div className="mt-5 space-y-2">
       <a href={url} target="_blank" rel="noopener noreferrer" className="btn-ghost block w-full text-center">Apri WhatsApp</a>
       <p className="text-xs text-cream/50">Controlla il riepilogo precompilato e premi “Invia” per inoltrarlo al ristorante.</p>
