@@ -11,6 +11,10 @@ vi.mock("../src/lib/stripe-api", () => ({
   StripeProviderError: class extends Error {},
 }));
 import { createCheckout, cancelCheckout, processStripeEvent, requirePaymentOrigin } from "../src/lib/stripe-payments";
+import { readOrderWhatsAppDraft, saveOrderWhatsAppDraft } from "../src/lib/order-whatsapp";
+import { readDiningParty, saveDiningParty } from "../src/lib/dining-party-storage";
+import { coverCharge } from "../src/lib/portions";
+import { orderWhatsAppMessage } from "../src/lib/whatsapp-draft";
 type FixturePayment = { id: string; orderId: string; method: string; status: string; amountCents: number; externalRef: string | null; createdAt: Date };
 let order: { id: string; number: number; status: string; hasWeighted: boolean; finalCents: number | null; payments: FixturePayment[] };
 let session: any;
@@ -28,6 +32,8 @@ beforeEach(() => {
   vi.stubEnv("PUBLIC_PAYMENT_ORIGINS", "");
   order = { id: "order_fixture", number: 42, status: "CONFIRMED", hasWeighted: true, finalCents: 4200, payments: [] };
   session = { id: "cs_test_fixture", status: "open", payment_status: "unpaid", amount_total: 4200, currency: "eur",
+    success_url: "https://restaurant.example/ordine/order_fixture?pagamento=verifica",
+    cancel_url: "https://restaurant.example/ordine/order_fixture?pagamento=annullato",
     payment_intent: "pi_fixture", url: "https://checkout.stripe.com/c/pay/fixture", livemode: false,
     metadata: { application: "vecciari", orderId: order.id, paymentId: "payment_fixture" } };
   m.db.$transaction.mockImplementation(async cb => cb(m.db));
@@ -42,10 +48,11 @@ beforeEach(() => {
   });
   m.db.payment.findFirst.mockImplementation(async ({ where }) => order.payments.find(p => p.id === where.id && (!where.status || p.status === where.status)));
   m.session.mockImplementation(async () => session);
-  m.stripe.mockImplementation(async path => path.startsWith("/prices?") ? { data: [{ id: "price_fixture", currency: "eur", unit_amount: 4200, product: "vecciari_order_balance", type: "one_time" }] } :
+  m.stripe.mockImplementation(async (path, fields) => path.startsWith("/prices?") ? { data: [{ id: "price_fixture", currency: "eur", unit_amount: 4200, product: "vecciari_order_balance", type: "one_time" }] } :
+    path === "/checkout/sessions" ? Object.assign(session, { success_url: fields.success_url, cancel_url: fields.cancel_url }) :
     path.endsWith("/expire") ? { ...session, status: "expired" } : session);
 });
-afterEach(() => vi.unstubAllEnvs());
+afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 describe("checkout e incassi: provider e database simulati", () => {
   it("blocca i tagli a peso non confermati prima di contattare Stripe", async () => {
     order.finalCents = null;
@@ -93,6 +100,98 @@ describe("checkout e incassi: provider e database simulati", () => {
     expect(m.session).toHaveBeenCalledWith(session.id);
     expect(m.db.payment.create).not.toHaveBeenCalled();
   });
+  it.each(["https://www.vecciari.com", "https://www.vecciari.it", "https://vecciari.replit.app"])(
+    "mantiene successo, annullamento e ripresa sul dominio ufficiale %s", async origin => {
+      vi.stubEnv("PUBLIC_BASE_URL", "https://www.vecciari.com");
+      vi.stubEnv("PUBLIC_PAYMENT_ORIGINS", "https://www.vecciari.it,https://vecciari.replit.app");
+      const accepted = requirePaymentOrigin(new Request(`${origin}/api/order/${order.id}/checkout`, {
+        headers: { origin, "x-forwarded-host": "attacker.example" },
+      }));
+      await createCheckout(order.id, accepted);
+      expect(await createCheckout(order.id, accepted)).toEqual({ url: session.url });
+      expect(session.success_url).toBe(`${origin}/ordine/${order.id}?pagamento=verifica`);
+      expect(session.cancel_url).toBe(`${origin}/ordine/${order.id}?pagamento=annullato`);
+      expect(order.payments).toHaveLength(1);
+    });
+  it.each(["https://www.vecciari.com", "https://www.vecciari.it", "https://vecciari.replit.app"])(
+    "conserva dati privati, tavolo e gruppo dopo successo o annullamento su %s", async origin => {
+      vi.stubEnv("PUBLIC_BASE_URL", "https://www.vecciari.com");
+      vi.stubEnv("PUBLIC_PAYMENT_ORIGINS", "https://www.vecciari.it,https://vecciari.replit.app");
+      // Separate stores per origin, like the browser. Returning to the canonical
+      // host instead of the originating alias makes this test fail.
+      let currentOrigin = origin;
+      const storage = () => {
+        const origins = new Map<string, Map<string, string>>();
+        const current = () => {
+          if (!origins.has(currentOrigin)) origins.set(currentOrigin, new Map());
+          return origins.get(currentOrigin)!;
+        };
+        return { getItem: (key: string) => current().get(key) ?? null,
+          setItem: (key: string, value: string) => { current().set(key, value); } };
+      };
+      vi.stubGlobal("window", { sessionStorage: storage(), localStorage: storage() });
+      const group = { key: "12345678-1234-4234-8234-123456789abc", people: 3, confirmed: true, at: Date.now() };
+      saveDiningParty(7, group);
+      saveOrderWhatsAppDraft(order.id, {
+        createdAt: Date.now(), payment: "STRIPE", autoRequested: true, attemptedStates: [], returnPath: "/t/private-table-token",
+        details: { pickupName: "Cliente verifica", notes: "Nota privata cucina",
+          items: [{ name: "Costata", quantity: 1, weightGrams: 600, cooking: "Media", options: ["Patate"], notes: "senza sale" }] },
+      });
+      const result = await createCheckout(order.id, origin);
+      expect(Object.keys(result)).toEqual(["url"]);
+      for (const returnUrl of [session.success_url, session.cancel_url]) {
+        const url = new URL(returnUrl);
+        currentOrigin = url.origin;
+        const draft = readOrderWhatsAppDraft(order.id)!;
+        expect(draft.returnPath).toBe("/t/private-table-token");
+        expect(draft.details?.pickupName).toBe("Cliente verifica");
+        expect(draft.details?.notes).toBe("Nota privata cucina");
+        expect(draft.details?.items[0]).toMatchObject({ options: ["Patate"], cooking: "Media", notes: "senza sale", weightGrams: 600 });
+        expect(readDiningParty(7)).toEqual(group);
+        // The server quote for the restored capability reports three covers
+        // already charged: a subsequent order must not quote them again.
+        expect(coverCharge("TABLE", readDiningParty(7)!.people, 3, 200).cents).toBe(0);
+        const message = orderWhatsAppMessage({ number: 42, channel: "TABLE", tableNumber: 7,
+          ...draft.details!, totalCents: 4200, coverCount: 3, coverUnitCents: 200, payment: "STRIPE_PAID" });
+        expect(message).toContain("Nota privata cucina");
+        expect(message).toContain("Patate");
+        expect(message).toContain("Tavolo: 7");
+        expect(url.pathname).toBe(`/ordine/${order.id}`);
+        expect([...url.searchParams.keys()]).toEqual(["pagamento"]);
+        expect(url.hash).toBe("");
+      }
+      expect(order.finalCents).toBe(4200);
+      expect(order.payments).toHaveLength(1);
+    });
+  it("non riusa su un altro alias un checkout che perderebbe la bozza e il gruppo", async () => {
+    vi.stubEnv("PUBLIC_PAYMENT_ORIGINS", "https://alias.restaurant.example");
+    addPending();
+    await expect(createCheckout(order.id, "https://alias.restaurant.example")).rejects.toThrow("Annulla il tentativo");
+    expect(order.payments[0].status).toBe("PENDING");
+    expect(m.db.payment.create).not.toHaveBeenCalled();
+    expect(m.db.payment.updateMany).not.toHaveBeenCalled();
+    expect(m.stripe).not.toHaveBeenCalled();
+  });
+  it.each(["success_url", "cancel_url"])("rifiuta una sessione storica con %s diverso o assente", async field => {
+    addPending(); session[field] = null;
+    await expect(createCheckout(order.id)).rejects.toThrow("vecchio collegamento");
+    expect(order.payments).toHaveLength(1);
+  });
+  it("controlla anche la risposta di un replay idempotente proveniente da un altro alias", async () => {
+    vi.stubEnv("PUBLIC_PAYMENT_ORIGINS", "https://alias.restaurant.example");
+    m.stripe.mockImplementation(async path => path.startsWith("/prices?") ? {
+      data: [{ id: "price_fixture", currency: "eur", unit_amount: 4200, product: "vecciari_order_balance", type: "one_time" }],
+    } : session);
+    await expect(createCheckout(order.id, "https://alias.restaurant.example")).rejects.toThrow("altro dominio");
+    expect(order.payments[0].externalRef).toBe(session.id);
+    expect(order.payments[0].status).toBe("PENDING");
+  });
+  it.each(["https://user:password@restaurant.example", "https://restaurant.example/redirect", "https://restaurant.example?next=https://evil.example", "not-a-url"])(
+    "rifiuta una configurazione di origine ambigua senza esporla: %s", async value => {
+      vi.stubEnv("PUBLIC_PAYMENT_ORIGINS", value);
+      await expect(createCheckout(order.id)).rejects.toThrow("non configurato correttamente");
+      expect(m.stripe).not.toHaveBeenCalled();
+    });
   it("non accetta prezzi Stripe diversi dal saldo canonico", async () => {
     m.stripe.mockResolvedValue({ data: [{ id: "price_fixture", currency: "usd", unit_amount: 1, product: "other", type: "one_time" }] });
     await expect(createCheckout(order.id)).rejects.toThrow("Checkout Stripe");

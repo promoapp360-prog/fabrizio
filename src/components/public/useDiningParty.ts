@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { coverCharge } from "@/lib/portions";
+import { readDiningParty, saveDiningParty } from "@/lib/dining-party-storage";
 
 type Quote = { validTable: boolean; coveredCount: number; coverCents: number };
 export function useDiningParty(tableNumber: number, enabled: boolean) {
@@ -11,12 +12,7 @@ export function useDiningParty(tableNumber: number, enabled: boolean) {
   useEffect(() => {
     setQuote(null); setError(""); setConfirmed(false); setPeople(1); setKey("");
     if (!enabled || !Number.isInteger(tableNumber) || tableNumber < 1 || tableNumber > 999) return;
-    let group = { key: crypto.randomUUID(), people: 1, confirmed: false, at: Date.now() };
-    try {
-      const saved = JSON.parse(localStorage.getItem(`vecciari-party:${tableNumber}`) || "null");
-      if (saved && /^[0-9a-f-]{36}$/i.test(saved.key) && Number.isInteger(saved.people) && saved.people >= 1 &&
-        saved.people <= 50 && Date.now() - saved.at < 8 * 3600000 && Date.now() >= saved.at) group = saved;
-    } catch { /* Storage may be disabled; this open page still retains its group. */ }
+    const group = readDiningParty(tableNumber) ?? { key: crypto.randomUUID(), people: 1, confirmed: false, at: Date.now() };
     setKey(group.key); setPeople(group.people); setConfirmed(group.confirmed);
     setLoadedTable(tableNumber);
   }, [tableNumber, enabled]);
@@ -37,11 +33,7 @@ export function useDiningParty(tableNumber: number, enabled: boolean) {
   }, [key, tableNumber, enabled, epoch, loadedTable]);
   useEffect(() => {
     if (!key || !enabled || loadedTable !== tableNumber) return;
-    try {
-      const previous = JSON.parse(localStorage.getItem(`vecciari-party:${tableNumber}`) || "null");
-      localStorage.setItem(`vecciari-party:${tableNumber}`, JSON.stringify({ key, people, confirmed,
-        at: previous?.key === key ? previous.at : Date.now() }));
-    } catch { /* No personal data is stored; the current page remains usable. */ }
+    saveDiningParty(tableNumber, { key, people, confirmed, at: Date.now() });
   }, [key, people, confirmed, tableNumber, enabled, loadedTable]);
   const refresh = useCallback(() => setEpoch(e => e + 1), []);
   const fee = coverCharge(enabled ? "TABLE" : "TAKEAWAY", people, quote?.coveredCount ?? 0, quote?.coverCents ?? 0);
