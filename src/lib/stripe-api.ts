@@ -8,6 +8,7 @@ export type StripeSession = {
   id: string; object: string; status: string; payment_status: string; url: string | null;
   amount_total: number | null; currency: string | null; livemode: boolean;
   payment_intent: string | null; metadata: Record<string, string>;
+  success_url?: string | null; cancel_url?: string | null;
 };
 export type StripeEvent = {
   id: string; type: string; livemode: boolean; account?: string;
