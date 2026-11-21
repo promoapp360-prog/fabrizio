@@ -1,4 +1,7 @@
 {
+  "Scegli il giorno, poi uno degli orari disponibili. Tutti gli orari sono di Matera.": "Виберіть день, потім доступний час. Час указано за Матерою.",
+  "Nessun orario disponibile per questo giorno. Scegli un’altra data.": "На цей день немає доступного часу. Виберіть іншу дату.",
+  "L’orario scelto non è più disponibile. Scegli nuovamente giorno e orario di ritiro.": "Вибраний час більше недоступний. Знову виберіть день і час отримання.",
   ". Scegli un altro giorno.": ". Оберіть інший день.",
   "· Consegna": "· Доставка",
   "· Zone: {0}": "· Зона: {0}",

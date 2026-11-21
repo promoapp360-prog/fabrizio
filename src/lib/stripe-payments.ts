@@ -9,10 +9,27 @@ import { sendOrderEmail } from "./order-email";
 function publishedPaymentOrigins() {
   return [process.env.PUBLIC_BASE_URL, ...(process.env.PUBLIC_PAYMENT_ORIGINS ?? "").split(",")]
     .filter((value): value is string => !!value?.trim()).map(value => {
-      const url = new URL(value.trim());
-      if (url.protocol !== "https:") throw new HttpError(503, "Indirizzo pubblico di pagamento non configurato correttamente.");
-      return url.origin;
+      try {
+        const url = new URL(value.trim());
+        if (url.protocol === "https:" && !url.username && !url.password &&
+          url.pathname === "/" && !url.search && !url.hash) return url.origin;
+      } catch { /* Report invalid configuration without exposing its value. */ }
+      throw new HttpError(503, "Indirizzo pubblico di pagamento non configurato correttamente.");
     });
+}
+
+function checkoutReturnUrls(origin: string, orderId: string) {
+  const receipt = `${origin}/ordine/${encodeURIComponent(orderId)}`;
+  return { success_url: `${receipt}?pagamento=verifica`, cancel_url: `${receipt}?pagamento=annullato` };
+}
+
+function requireMatchingCheckoutReturn(session: StripeSession, origin: string, orderId: string) {
+  const expected = checkoutReturnUrls(origin, orderId);
+  // An open Checkout cannot have its return URLs changed. Never send the tab to
+  // one created on another alias: both private drafts and dining groups are
+  // origin-scoped. Do not expire it automatically (a payment may be in flight).
+  if (session.success_url !== expected.success_url || session.cancel_url !== expected.cancel_url)
+    throw new HttpError(409, "Il tentativo online è stato aperto su un altro dominio o con un vecchio collegamento. Annulla il tentativo online e riprova da questa pagina, senza creare un nuovo ordine.");
 }
 
 export function requirePaymentOrigin(req: Request) {
@@ -92,7 +109,10 @@ export async function createCheckout(orderId: string, requestedReturnOrigin?: st
       await settleSession(session);
       return { paid: true };
     }
-    if (session.status === "open" && session.url) return { url: session.url };
+    if (session.status === "open" && session.url) {
+      requireMatchingCheckoutReturn(session, returnOrigin, orderId);
+      return { url: session.url };
+    }
     // Checkout concluso non equivale a pagamento fallito: la banca può
     // ancora confermare l'incasso. Sbloccare qui consentirebbe un doppio pagamento.
     if (session.status !== "expired")
@@ -114,8 +134,7 @@ export async function createCheckout(orderId: string, requestedReturnOrigin?: st
     "payment_intent_data[metadata][application]": STRIPE_APPLICATION,
     "payment_intent_data[metadata][orderId]": orderId, "payment_intent_data[metadata][paymentId]": payment.id,
     "payment_intent_data[description]": `Vecciarì — ordine n° ${reservation.number}`,
-    success_url: `${returnOrigin}/ordine/${orderId}?pagamento=verifica`,
-    cancel_url: `${returnOrigin}/ordine/${orderId}?pagamento=annullato`,
+    ...checkoutReturnUrls(returnOrigin, orderId),
     // Stripe richiede almeno 30 minuti residui alla creazione. Il valore
     // resta deterministico per l'idempotenza e valido durante tutti i 35
     // minuti in cui si può riprovare una preparazione senza externalRef.
@@ -123,6 +142,9 @@ export async function createCheckout(orderId: string, requestedReturnOrigin?: st
   }, `vecciari-checkout-${payment.id}`);
   if (!session.url || !session.url.startsWith("https://checkout.stripe.com/")) throw new HttpError(503, "Checkout Stripe non disponibile");
   await db.payment.update({ where: { id: payment.id }, data: { externalRef: session.id } });
+  // Also check the provider's response after an idempotent replay (for example
+  // a retry on another alias after the first response was lost).
+  requireMatchingCheckoutReturn(session, returnOrigin, orderId);
   return { url: session.url };
 }
 

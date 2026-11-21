@@ -1,4 +1,7 @@
 [
+  "Scegli il giorno, poi uno degli orari disponibili. Tutti gli orari sono di Matera.",
+  "Nessun orario disponibile per questo giorno. Scegli un’altra data.",
+  "L’orario scelto non è più disponibile. Scegli nuovamente giorno e orario di ritiro.",
   ". Scegli un altro giorno.",
   "· {0} g",
   "· Consegna",

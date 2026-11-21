@@ -1,6 +1,7 @@
 "use client";
 import Translated from "@/components/public/Translated";
 import { useEffect, useState } from "react";
+import PickupTimePicker from "./PickupTimePicker";
 
 export type OrderDetailsValue = {
   name: string; phone: string; email: string; tableNumber: string;
@@ -39,9 +40,8 @@ export default function OrderDetails({ value, onChange, channel, prepMinutes = 3
       <input className="input" type="email" autoComplete="email" maxLength={160} required value={value.email} onChange={e => set("email", e.target.value)} /></label>
     <label className="block"><span className="label">Telefono *</span>
       <input className="input" type="tel" autoComplete="tel" maxLength={25} required value={value.phone} onChange={e => set("phone", e.target.value)} /></label>
-    {channel !== "TABLE" && <label className="block"><span className="label">{channel === "TAKEAWAY" ? "Orario di ritiro *" : "Orario di consegna *"}</span>
-      <input className="input" type="datetime-local" required value={value.pickupAt} onChange={e => set("pickupAt", e.target.value)} />
-      <span className="text-xs text-cream/60">Almeno {prepMinutes} minuti di preavviso, entro 7 giorni.</span></label>}
+    {channel !== "TABLE" && <><PickupTimePicker value={value.pickupAt} onChange={at => set("pickupAt", at)} delivery={channel === "DELIVERY"} />
+      <p className="text-xs text-cream/60">Almeno {prepMinutes} minuti di preavviso, entro 7 giorni.</p></>}
     {channel === "DELIVERY" && <label className="block"><span className="label">Indirizzo di consegna *</span>
       <input className="input" autoComplete="street-address" required maxLength={200} value={value.address} onChange={e => set("address", e.target.value)} /></label>}
     <fieldset className="rounded-xl border border-cream/15 p-3">

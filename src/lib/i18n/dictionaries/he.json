@@ -1,4 +1,7 @@
 {
+  "Scegli il giorno, poi uno degli orari disponibili. Tutti gli orari sono di Matera.": "בחרו יום ולאחר מכן שעה זמינה. כל השעות הן לפי הזמן המקומי במטרה.",
+  "Nessun orario disponibile per questo giorno. Scegli un’altra data.": "אין שעות זמינות ביום זה. בחרו תאריך אחר.",
+  "L’orario scelto non è più disponibile. Scegli nuovamente giorno e orario di ritiro.": "השעה שנבחרה אינה זמינה עוד. בחרו שוב יום ושעת איסוף.",
   ". Scegli un altro giorno.": ". בחר יום אחר.",
   "· Consegna": "· משלוח",
   "· Zone: {0}": "· אזור: {0}",

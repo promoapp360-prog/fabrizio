@@ -7,6 +7,7 @@ import { getSettings } from "@/lib/settings";
 import { customerOrderSchema, requestedPaymentAvailable } from "@/lib/checkout";
 import { onlinePaymentsAvailable } from "@/lib/payment-policy";
 import { sendOrderEmail } from "@/lib/order-email";
+import { validPickupTime } from "@/lib/pickup-times";
 
 const schema = cartSchema.merge(customerOrderSchema).extend({
   channel: z.enum(["TABLE", "TAKEAWAY", "DELIVERY"]),
@@ -31,10 +32,8 @@ export const POST = handle(async (req: Request) => {
   }
   if (d.channel === "DELIVERY" && !d.address) throw new HttpError(400, "Indirizzo obbligatorio");
   const pickupAt = d.channel === "TABLE" ? undefined : d.pickupAt ? new Date(d.pickupAt) : undefined;
-  if (d.channel !== "TABLE" && (!pickupAt || !Number.isFinite(pickupAt.getTime()) ||
-    pickupAt.getTime() < Date.now() + s.ordering.prepMinutes * 60000 ||
-    pickupAt.getTime() > Date.now() + 7 * 86400000))
-    throw new HttpError(400, `Scegli un orario nei prossimi 7 giorni con almeno ${s.ordering.prepMinutes} minuti di preavviso`);
+  if (d.channel !== "TABLE" && (!pickupAt || !validPickupTime(pickupAt, s.ordering.prepMinutes)))
+    throw new HttpError(400, "L’orario scelto non è più disponibile. Scegli nuovamente giorno e orario di ritiro.");
   const customer = await db.customer.upsert({
     where: { email: d.email }, update: { name: d.name, phone: d.phone },
     create: { name: d.name, email: d.email, phone: d.phone },

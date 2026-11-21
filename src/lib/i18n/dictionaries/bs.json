@@ -1,4 +1,7 @@
 {
+  "Scegli il giorno, poi uno degli orari disponibili. Tutti gli orari sono di Matera.": "Odaberite dan, zatim dostupan termin. Sva vremena su po lokalnom vremenu u Materi.",
+  "Nessun orario disponibile per questo giorno. Scegli un’altra data.": "Nema dostupnih termina za ovaj dan. Odaberite drugi datum.",
+  "L’orario scelto non è più disponibile. Scegli nuovamente giorno e orario di ritiro.": "Odabrani termin više nije dostupan. Ponovo odaberite dan i vrijeme preuzimanja.",
   ". Scegli un altro giorno.": ". Odaberite drugi dan.",
   "· Consegna": "· Dostava",
   "· Zone: {0}": "· Zona: {0}",
