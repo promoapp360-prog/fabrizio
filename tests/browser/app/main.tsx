@@ -4,6 +4,8 @@ import OnlineOrder from "@/app/(site)/ordina/OnlineOrder";
 import TableOrder from "@/app/t/[token]/TableOrder";
 import OrderReceipt from "@/app/(site)/ordine/[id]/OrderReceipt";
 import { menu, PHONE, TOKEN } from "../data";
+import ReservationForm from "@/app/(site)/prenota/ReservationForm";
+import "@/app/globals.css";
 
 function subscribe(notify: () => void) {
   window.addEventListener("test:navigation", notify);
@@ -16,6 +18,8 @@ function subscribe(notify: () => void) {
 
 function App() {
   const pathname = useSyncExternalStore(subscribe, () => window.location.pathname);
+  if (pathname === "/calendar-check")
+    return <ReservationForm maxParty={10} phone="" whatsapp="" />;
   if (pathname.startsWith("/ordine/"))
     return <OrderReceipt id={pathname.split("/").pop()!} whatsapp={PHONE} />;
   if (pathname.startsWith("/t/"))

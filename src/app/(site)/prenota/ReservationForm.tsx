@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { reservationInputSchema, todayInRome, type ReservationAvailability } from "@/lib/reservation-input";
 import { closeWhatsAppDraftWindow, finishWhatsAppDraftWindow, openWhatsAppDraftWindow, reservationWhatsAppMessage } from "@/lib/whatsapp-draft";
 import ReservationReceipt from "./ReservationReceipt";
+import DateCalendar from "@/components/public/DateCalendar";
 
 type Step = 0 | 1 | 2 | 3;
 const steps = ["Data", "Persone", "Orario", "Dati cliente"];
@@ -110,8 +111,8 @@ export default function ReservationForm({ maxParty, phone, whatsapp, initialRece
     <h2 ref={heading} tabIndex={-1} className="text-2xl outline-none">{["Quando vuoi venire?", "Quante persone?", "Scegli l’orario", "I tuoi dati"][step]}</h2>
 
     {step === 0 && <div className="space-y-4">
-      <label className="block"><span className="label">Data della visita</span><input required type="date" min={todayInRome()} className="input min-h-12 min-w-0"
-        value={f.date} onChange={e => { setF(current => ({ ...current, date: e.target.value, time: "" })); setAvailability(null); setError(""); }} /></label>
+      <div><p className="label">Data della visita</p><DateCalendar min={todayInRome()} value={f.date}
+        onChange={date => { setF(current => ({ ...current, date, time: "" })); setAvailability(null); setError(""); }} /></div>
       {loading && <p role="status" className="text-sm text-cream/60">Controllo giorni di apertura…</p>}
       {availability?.closed && <p role="status" className="rounded-xl border border-gold/30 p-3 text-sm text-gold">{availability.closed}. Scegli un altro giorno.</p>}
       <button type="button" onClick={advance} className="btn-gold min-h-12 w-full" disabled={!f.date || f.date < todayInRome() || loading || !availability?.open || !!availabilityError}>Continua</button>

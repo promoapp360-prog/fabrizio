@@ -1,0 +1,32 @@
+import { test, expect } from "./fixtures";
+
+test("calendario leggibile: scelta giorno, tastiera, mesi e chiusure senza inviare prenotazioni", async ({ page, network }) => {
+  await page.clock.install({ time: new Date("2026-11-21T10:00:00Z") });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/calendar-check");
+  const today = page.getByRole("button", { name: /21 novembre 2026/ });
+  await expect(today).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: /20 novembre 2026/ })).toBeDisabled();
+  await expect(page.getByRole("button", { name: /Indietro: ottobre 2026/ })).toBeDisabled();
+  await expect(page.locator('input[type="date"]')).toHaveCount(0);
+  const sunday = page.getByRole("button", { name: /22 novembre 2026/ });
+  await sunday.click();
+  await expect(sunday).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "Continua", exact: true })).toBeEnabled();
+  await sunday.press("ArrowRight");
+  const monday = page.getByRole("button", { name: /23 novembre 2026/ });
+  await expect(monday).toBeFocused();
+  await expect(sunday).toHaveAttribute("aria-pressed", "true");
+  await monday.press("Enter");
+  await expect(page.getByText(/Lunedì chiuso/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Continua", exact: true })).toBeDisabled();
+  await page.getByRole("button", { name: /Continua: dicembre 2026/ }).click();
+  await expect(page.getByText("dicembre 2026", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: /Indietro: novembre 2026/ }).click();
+  await expect(monday).toHaveAttribute("aria-pressed", "true");
+  const size = await today.boundingBox();
+  expect(size!.height).toBeGreaterThanOrEqual(44);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  expect(network.orderPosts).toEqual([]);
+  expect(network.opens).toEqual([]);
+});

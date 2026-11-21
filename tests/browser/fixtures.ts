@@ -58,6 +58,12 @@ async function intercept(context: import("@playwright/test").BrowserContext) {
         return json(state.order);
       }
       if (method === "GET" && path === "/api/payments/config") return json({ online: true });
+      if (method === "GET" && path === "/api/reservations") {
+        const date = url.searchParams.get("date")!;
+        const closed = new Date(`${date}T12:00:00Z`).getUTCDay() === 1;
+        return json({ date, people: 2, open: !closed, closed: closed ? "Lunedì chiuso" : null,
+          slots: closed ? [] : ["19:00"], services: [] });
+      }
       if (method === "GET" && path === "/api/pickup-slots") {
         const day = url.searchParams.get("date") || romeDay(state.pickupNow);
         return json({ day, today: romeDay(state.pickupNow), lastDay: pickupDay(7, state.pickupNow),
