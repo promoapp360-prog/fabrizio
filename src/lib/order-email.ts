@@ -5,10 +5,12 @@ import { STATUS_LABEL } from "./orders";
 import type { Customer, Order, OrderItem } from "@prisma/client";
 import { getSettings } from "./settings";
 import { onlinePaymentsAvailable } from "./payment-policy";
+import { PORTION_NOTICE } from "./portions";
 
 export type OrderEmailData = Pick<Order, "id" | "number" | "channel" | "tableNumber" | "customerName" | "pickupAt" | "finalCents" | "estimatedCents" | "hasWeighted" | "notes"> & {
+  pricingPolicy?: string; coverCount?: number; coverUnitCents?: number; partySize?: number;
   customer: Pick<Customer, "name"> | null;
-  items: Pick<OrderItem, "quantity" | "nameSnapshot" | "cooking" | "lineFinalCents" | "lineEstCents">[];
+  items: (Pick<OrderItem, "quantity" | "nameSnapshot" | "cooking" | "lineFinalCents" | "lineEstCents"> & { estWeightGrams?: number | null; actualWeightGrams?: number | null })[];
   payments?: { method: string; status: string }[];
 };
 
@@ -35,9 +37,15 @@ export function buildOrderEmail(order: OrderEmailData, event: string, baseUrl = 
     `Ciao ${name},`, "", `Vecciarì — ordine n° ${order.number}`, mode,
     `Stato: ${status}`,
     order.pickupAt ? `Ritiro: ${order.pickupAt.toLocaleString("it-IT", { timeZone: "Europe/Rome" })} (ora italiana)` : "",
-    "", ...order.items.map(i => `${i.quantity} × ${i.nameSnapshot}${i.cooking ? ` · ${i.cooking}` : ""} — ${formatEUR(i.lineFinalCents ?? i.lineEstCents)}`),
+    "", ...order.items.map(i => {
+      const grams = order.pricingPolicy === "FIXED_PORTIONS" ? i.estWeightGrams : i.actualWeightGrams;
+      return `${i.quantity} × ${i.nameSnapshot}${grams ? ` · ${grams} g` : ""}${i.cooking ? ` · ${i.cooking}` : ""} — ${formatEUR(i.lineFinalCents ?? i.lineEstCents)}`;
+    }),
+    order.partySize ? `Persone: ${order.partySize}` : "",
+    order.coverCount ? `Coperti: ${order.coverCount} × ${formatEUR(order.coverUnitCents ?? 0)} = ${formatEUR(order.coverCount * (order.coverUnitCents ?? 0))}` : "",
     "", `Totale ${order.finalCents == null ? "indicativo" : "definitivo"}: ${formatEUR(total)}`,
     order.hasWeighted && order.finalCents == null ? "Le carni a peso vengono pesate dal personale: il totale sarà confermato prima del pagamento." : "",
+    order.hasWeighted && order.pricingPolicy === "FIXED_PORTIONS" ? PORTION_NOTICE : "",
     event === "PAID" ? order.payments?.some(p => p.method === "STRIPE" && p.status === "PAID")
       ? "Pagamento online confermato da Stripe. Questa email non sostituisce il documento fiscale."
       : "Pagamento registrato dal personale. Questa email non sostituisce il documento fiscale."

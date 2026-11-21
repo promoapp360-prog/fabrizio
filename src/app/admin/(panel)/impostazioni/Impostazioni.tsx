@@ -7,6 +7,7 @@ const hexToRgb = (h: string) => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 1
 
 export default function Impostazioni({ settings, integrations }: { settings: any; integrations: any[] }) {
   const [tab, setTab] = useState("generale"); const [s, setS] = useState(settings); const [msg, setMsg] = useState("");
+  const [portionInput, setPortionInput] = useState((settings.ordering.portionWeightsGrams ?? [500, 600, 700, 800]).join(", "));
   const save = async (key: string) => { try { await api("/api/admin/settings", "PUT", { key, value: s[key] }); setMsg("Salvato ✓"); setTimeout(() => setMsg(""), 2000); } catch (e: any) { setMsg(e.message); } };
   const set = (k: string, f: string, v: any) => setS({ ...s, [k]: { ...s[k], [f]: v } });
   const T = ({ k, f, l, type = "text" }: { k: string; f: string; l: string; type?: string }) => <label className="block"><span className="label">{l}</span>
@@ -39,6 +40,13 @@ export default function Impostazioni({ settings, integrations }: { settings: any
         <label><span className="label">Momento del pagamento</span><select className="input" value={s.ordering.payTiming} onChange={e => set("ordering", "payTiming", e.target.value)}><option value="END">A fine pasto</option><option value="ADVANCE">Anticipato</option></select></label>
         <T k="ordering" f="prepMinutes" l="Preavviso minimo asporto (min)" type="number" /><T k="ordering" f="deliveryMinCents" l="Minimo consegna €" type="money" /><T k="ordering" f="deliveryFeeCents" l="Costo consegna €" type="money" />
         <T k="ordering" f="deliveryZones" l="Zone di consegna (testo)" />
+        <label className="block"><span className="label">Coperto per persona € (solo tavolo)</span>
+          <input className="input" type="number" min="0" max="1000" step="0.01" value={(s.ordering.coverCents ?? 0) / 100}
+            onChange={e => set("ordering", "coverCents", Math.round(Number(e.target.value) * 100))} /></label>
+        <label className="block"><span className="label">Pezzature carni in grammi, separate da virgola</span>
+          <input className="input" value={portionInput}
+            onChange={e => { setPortionInput(e.target.value); set("ordering", "portionWeightsGrams", e.target.value.split(",").map((n: string) => Number(n.trim()))); }} /></label>
+        <p className="text-xs text-cream/60 md:col-span-2">Le nuove pezzature hanno prezzo definitivo e sono pagabili subito. Il coperto è conteggiato una sola volta per persona del medesimo gruppo e visita al tavolo. Gli ordini precedenti restano invariati. Coperto iniziale: 0 €, da configurare prima dell’uso.</p>
         <div className="md:col-span-2"><Save k="ordering" /></div></div>}
       {tab === "sicurezza" && <div className="card space-y-4">
         <T k="security" f="minPasswordLength" l="Lunghezza minima password staff (caratteri)" type="number" />

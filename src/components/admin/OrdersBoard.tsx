@@ -43,9 +43,12 @@ export default function OrdersBoard({ mode, canPay, orderingOn }: { mode: "floor
             <li key={i.id}><b>{i.quantity}× {i.nameSnapshot}</b>{i.cooking && <span className="ml-2 rounded bg-gold px-1.5 text-ink">{i.cooking}</span>}
               {i.options.length > 0 && <p className="text-cream/70">{i.options.map((x: any) => x.name).join(", ")}</p>}
               {i.notes && <p className="italic text-gold">» {i.notes}</p>}
-              {i.estWeightGrams != null && <WeightInput item={i} disabled={o.payments?.some((p: any) => ["PAID", "REFUNDED"].includes(p.status) || p.method === "STRIPE" && p.status === "PENDING")} onSave={g => act(o.id, { action: "weight", itemId: i.id, grams: g })} />}
+              {i.estWeightGrams != null && (o.pricingPolicy === "FIXED_PORTIONS"
+                ? <p className="text-sm text-gold">Pezzatura scelta: {i.estWeightGrams} g · prezzo definitivo</p>
+                : <WeightInput item={i} disabled={o.payments?.some((p: any) => ["PAID", "REFUNDED"].includes(p.status) || p.method === "STRIPE" && p.status === "PENDING")} onSave={g => act(o.id, { action: "weight", itemId: i.id, grams: g })} />)}
             </li>))}</ul>
           {o.notes && <p className="rounded bg-gold/10 p-2 text-sm"><b>Note:</b> {o.notes}</p>}
+          {o.partySize > 0 && <p className="text-sm">Ordine per {o.partySize} persone · Coperti su questo ordine: {o.coverCount} × {formatEUR(o.coverUnitCents)}</p>}
           {o.deliveryAddress && <p className="text-sm">📍 {o.deliveryAddress}</p>}
           {mode === "floor" && <p className="mt-2 text-sm">{o.finalCents != null ? <>Totale definitivo <b>{formatEUR(o.finalCents)}</b></> : <>Totale indicativo {formatEUR(o.estimatedCents)}</>}
             {o.payments?.some((p: any) => p.status === "PAID") && <span className="ml-2 text-green-400">{o.payments.some((p: any) => p.method === "STRIPE" && p.status === "PAID") ? "Pagato online · Stripe" : "Pagato"}</span>}
@@ -81,7 +84,8 @@ function printTicket(o: any) {
   const esc = (s: string) => String(s ?? "").replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!));
   w.document.write(`<html><head><title>Comanda #${o.number}</title><style>body{font-family:monospace;width:72mm;margin:0;padding:4mm;font-size:13px}h1{font-size:22px;margin:0}hr{border:0;border-top:1px dashed #000}.n{font-style:italic}</style></head><body>
 <h1>${o.tableNumber ? "TAVOLO " + o.tableNumber : esc(CH[o.channel]).toUpperCase()}</h1><div>Comanda #${o.number} – ${new Date(o.createdAt).toLocaleString("it-IT")}</div><hr/>
-${o.items.map((i: any) => `<div><b>${i.quantity} x ${esc(i.nameSnapshot)}</b>${i.cooking ? ` [${esc(i.cooking)}]` : ""}${i.options.length ? `<br/>&nbsp;&nbsp;${esc(i.options.map((x: any) => x.name).join(", "))}` : ""}${i.notes ? `<br/><span class="n">&nbsp;&nbsp;» ${esc(i.notes)}</span>` : ""}${i.estWeightGrams ? `<br/>&nbsp;&nbsp;peso ≈${i.estWeightGrams}g` : ""}</div>`).join("")}
+${o.partySize ? `<div>Persone: ${Number(o.partySize)} · Coperti: ${Number(o.coverCount)}</div>` : ""}
+${o.items.map((i: any) => `<div><b>${i.quantity} x ${esc(i.nameSnapshot)}</b>${i.cooking ? ` [${esc(i.cooking)}]` : ""}${i.options.length ? `<br/>&nbsp;&nbsp;${esc(i.options.map((x: any) => x.name).join(", "))}` : ""}${i.notes ? `<br/><span class="n">&nbsp;&nbsp;» ${esc(i.notes)}</span>` : ""}${i.estWeightGrams ? `<br/>&nbsp;&nbsp;${o.pricingPolicy === "FIXED_PORTIONS" ? "pezzatura " : "peso ≈"}${Number(i.estWeightGrams)}g` : ""}</div>`).join("")}
 <hr/>${o.notes ? `<div class="n">NOTE: ${esc(o.notes)}</div>` : ""}<script>window.print();setTimeout(()=>window.close(),500)</script></body></html>`);
   w.document.close();
 }

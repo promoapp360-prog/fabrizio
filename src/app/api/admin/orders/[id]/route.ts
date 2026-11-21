@@ -10,6 +10,7 @@ import { can } from "@/lib/rbac";
 import { sendOrderEmail } from "@/lib/order-email";
 import { hasOpenStripePayment } from "@/lib/payment-policy";
 import { cancelCheckout } from "@/lib/stripe-payments";
+import { FIXED_PORTIONS } from "@/lib/portions";
 
 const schema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("status"), status: z.enum(["CONFIRMED", "PREPARING", "READY", "SERVED", "CANCELLED"]) }),
@@ -40,6 +41,10 @@ export const PATCH = handle(async (req: Request, { params }: { params: Promise<{
   if (body.action === "payment" || body.action === "confirmFinal") await requirePermission("orders.payments");
 
   const result = await db.$transaction(async tx => {
+    // Same table lock as order creation: cancellation cannot race a cover allocation.
+    const location = await tx.order.findUnique({ where: { id }, select: { tableNumber: true } });
+    if (location?.tableNumber)
+      await tx.$queryRaw`SELECT id FROM "Table" WHERE number = ${location.tableNumber} FOR UPDATE`;
     // Row lock serializes concurrent payments, weights and confirmations.
     const order = await tx.order.update({ where: { id }, data: { updatedAt: new Date() }, include: { items: true, payments: true } });
     const paid = order.payments.find(p => p.status === "PAID");
@@ -51,11 +56,16 @@ export const PATCH = handle(async (req: Request, { params }: { params: Promise<{
     if (body.action === "status") {
       if (!STATUS_FLOW[order.status].includes(body.status)) throw new HttpError(409, "Stato già aggiornato o passaggio non consentito");
       if (paid && body.status === "CANCELLED") throw new HttpError(409, "Ordine già pagato: gestisci prima lo storno con il responsabile");
+      if (body.status === "CANCELLED" && order.coverCount > 0 && order.diningGroupKey &&
+        await tx.order.count({ where: { sessionId: order.sessionId, diningGroupKey: order.diningGroupKey, id: { not: id }, status: { not: "CANCELLED" } } }))
+        throw new HttpError(409, "Prima annulla gli ordini aggiuntivi del gruppo, per non perdere i coperti già conteggiati.");
       await tx.order.update({ where: { id }, data: { status: body.status } });
       await tx.orderEvent.create({ data: { orderId: id, status: body.status, userId: user.id } });
       return { data: { ok: true }, emailEvent: body.status };
     }
     if (order.status === "CANCELLED") throw new HttpError(409, "Ordine annullato");
+    if (order.pricingPolicy === FIXED_PORTIONS && ["weight", "confirmFinal"].includes(body.action))
+      throw new HttpError(409, "Pezzatura a prezzo definitivo: il peso effettivo non modifica l’importo concordato.");
     if (body.action === "weight") {
       if (paid) throw new HttpError(409, "Non puoi modificare il peso di un ordine pagato");
       const item = order.items.find(i => i.id === body.itemId);

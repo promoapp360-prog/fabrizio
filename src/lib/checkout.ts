@@ -7,8 +7,6 @@ export const customerOrderSchema = z.object({
   privacy: z.literal(true),
 });
 
-export function requireCounterPayment(payment: string) {
-  // Stripe is deliberately unavailable until THIS customer's account is connected.
-  // Never accept an order as paid or invent a Checkout URL.
-  return payment !== "STRIPE";
+export function requestedPaymentAvailable(payment: string, onlineEnabled: boolean) {
+  return payment !== "STRIPE" || onlineEnabled;
 }

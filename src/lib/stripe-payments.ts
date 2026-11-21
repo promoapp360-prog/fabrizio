@@ -7,8 +7,14 @@ import { getCheckoutSession, STRIPE_APPLICATION, stripeRequest, StripeProviderEr
 import { sendOrderEmail } from "./order-email";
 
 export function requirePaymentOrigin(req: Request) {
-  const allowed = [process.env.PUBLIC_BASE_URL && new URL(process.env.PUBLIC_BASE_URL).origin];
-  if (/^(sk|rk)_live_/.test(process.env.STRIPE_SECRET_KEY ?? "") && req.headers.get("origin") !== allowed[0])
+  const published = [process.env.PUBLIC_BASE_URL, ...(process.env.PUBLIC_PAYMENT_ORIGINS ?? "").split(",")]
+    .filter((value): value is string => !!value?.trim()).map(value => {
+      const url = new URL(value.trim());
+      if (url.protocol !== "https:") throw new HttpError(503, "Indirizzo pubblico di pagamento non configurato correttamente.");
+      return url.origin;
+    });
+  const allowed = [...published];
+  if (/^(sk|rk)_live_/.test(process.env.STRIPE_SECRET_KEY ?? "") && !published.includes(req.headers.get("origin") ?? ""))
     throw new HttpError(503, "Pagamento online momentaneamente non disponibile.");
   if (process.env.NODE_ENV !== "production") {
     allowed.push(new URL(req.url).origin);

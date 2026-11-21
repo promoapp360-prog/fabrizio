@@ -129,6 +129,12 @@ describe("checkout e incassi: provider e database simulati", () => {
     expect(() => requirePaymentOrigin(new Request("https://restaurant.example/api", { headers: { origin: "https://other.example" } }))).toThrow("Origine");
     expect(() => requirePaymentOrigin(new Request("https://restaurant.example/api", { headers: { origin: "https://restaurant.example" } }))).not.toThrow();
   });
+  it("accetta solo il dominio del cliente e gli alias esplicitamente autorizzati", () => {
+    vi.stubEnv("PUBLIC_PAYMENT_ORIGINS", "https://alias.restaurant.example");
+    vi.stubEnv("STRIPE_SECRET_KEY", "rk_live_fixture_not_a_credential");
+    expect(() => requirePaymentOrigin(new Request("https://alias.restaurant.example/api", { headers: { origin: "https://alias.restaurant.example" } }))).not.toThrow();
+    expect(() => requirePaymentOrigin(new Request("https://restaurant.example/api", { headers: { origin: "https://outside.example" } }))).toThrow();
+  });
   it("non permette al browser dell’anteprima di avviare checkout con chiave live", async () => {
     vi.stubEnv("STRIPE_SECRET_KEY", "sk_live_fixture_not_real");
     expect(() => requirePaymentOrigin(new Request("https://preview.example/api", { headers: { origin: "https://preview.example" } }))).toThrow();

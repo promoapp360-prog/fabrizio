@@ -6,6 +6,7 @@ export type WhatsAppOrderLine = {
   cooking?: string | null;
   options?: string[];
   notes?: string | null;
+  weightGrams?: number | null;
 };
 
 export function whatsappDraftUrl(phone: string, message: string): string | null {
@@ -72,6 +73,9 @@ export function orderWhatsAppMessage(input: {
   totalCents: number;
   weighted?: boolean;
   notes?: string;
+  coverCount?: number;
+  coverUnitCents?: number;
+  payment?: string;
 }): string {
   const mode = input.channel === "TABLE" ? "Al tavolo" : input.channel === "TAKEAWAY" ? "Asporto" : "Consegna";
   const lines = ["Buongiorno Vecciarì, ho appena inviato un ordine.", `Ordine n° ${input.number}`, `Modalità: ${mode}`];
@@ -85,10 +89,14 @@ export function orderWhatsAppMessage(input: {
   }
   if (input.channel === "DELIVERY" && input.address?.trim()) lines.push(`Indirizzo: ${input.address.trim()}`);
   lines.push("Prodotti:", ...input.items.map(item => {
-    const details = [item.cooking, ...(item.options ?? []), item.notes].filter(Boolean);
+    const details = [item.weightGrams ? `${item.weightGrams} g` : null, item.cooking, ...(item.options ?? []), item.notes].filter(Boolean);
     return `- ${item.quantity} × ${item.name}${details.length ? ` (${details.join(", ")})` : ""}`;
   }));
   if (input.notes?.trim()) lines.push(`Note per la cucina: ${input.notes.trim()}`);
-  lines.push(`Totale${input.weighted ? " indicativo" : ""}: ${formatEUR(input.totalCents)}`, "Pagamento alla cassa.");
+  if (input.coverCount) lines.push(`Coperti: ${input.coverCount} × ${formatEUR(input.coverUnitCents ?? 0)}`);
+  lines.push(`Totale${input.weighted ? " indicativo" : ""}: ${formatEUR(input.totalCents)}`,
+    input.payment === "STRIPE_PAID" ? "Pagamento online confermato da Stripe." :
+    input.payment === "CASH_PAID" ? "Pagamento registrato dal personale." :
+    input.payment === "STRIPE" ? "Pagamento online da completare su Stripe." : "Pagamento alla cassa.");
   return lines.join("\n");
 }

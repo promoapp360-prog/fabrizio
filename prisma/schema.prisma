@@ -425,6 +425,11 @@ model Order {
   estimatedCents Int           // totale stimato (include indicativi a peso)
   finalCents     Int?          // totale definitivo dopo pesatura/conferma
   hasWeighted    Boolean       @default(false)
+  pricingPolicy  String        @default("ACTUAL_WEIGHT")
+  diningGroupKey String?
+  partySize      Int           @default(0)
+  coverCount     Int           @default(0)
+  coverUnitCents Int           @default(0)
   paymentMethod  PaymentMethod?
   idempotencyKey String        @unique // impedisce doppio invio
   items          OrderItem[]
@@ -433,6 +438,7 @@ model Order {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   @@index([status, createdAt])
+  @@index([sessionId, diningGroupKey])
 }
 
 model OrderItem {

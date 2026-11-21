@@ -10,7 +10,8 @@ export const GET = handle(async (_r: Request, { params: pendingParams }: { param
   const o = await db.order.findUnique({ where: { id: params.id }, select: {
     number: true, status: true, channel: true, tableNumber: true, estimatedCents: true,
     finalCents: true, hasWeighted: true, pickupAt: true, paymentMethod: true,
-    items: { select: { nameSnapshot: true, quantity: true, cooking: true, lineEstCents: true, lineFinalCents: true } },
+    pricingPolicy: true, partySize: true, coverCount: true, coverUnitCents: true,
+    items: { select: { nameSnapshot: true, quantity: true, cooking: true, estWeightGrams: true, actualWeightGrams: true, lineEstCents: true, lineFinalCents: true } },
     payments: { select: { status: true, method: true } },
   } });
   if (!o) throw new HttpError(404, "Ordine non trovato");

@@ -4,7 +4,8 @@ import { db } from "@/lib/db";
 import { handle, HttpError, rateLimit, clientIp } from "@/lib/api";
 import { cartSchema, createOrder } from "@/lib/orders";
 import { getSettings } from "@/lib/settings";
-import { customerOrderSchema, requireCounterPayment } from "@/lib/checkout";
+import { customerOrderSchema, requestedPaymentAvailable } from "@/lib/checkout";
+import { onlinePaymentsAvailable } from "@/lib/payment-policy";
 import { sendOrderEmail } from "@/lib/order-email";
 
 const schema = cartSchema.merge(customerOrderSchema).extend({
@@ -19,7 +20,8 @@ export const POST = handle(async (req: Request) => {
   rateLimit(`online:${clientIp(req)}`, 12, 60_000);
   const d = schema.parse(await req.json());
   const s = await getSettings();
-  if (!requireCounterPayment(d.payment)) throw new HttpError(503, "Stripe non è ancora collegato: scegli il pagamento alla cassa.");
+  if (!requestedPaymentAvailable(d.payment, s.ordering.stripeEnabled && onlinePaymentsAvailable()))
+    throw new HttpError(503, "Pagamento online momentaneamente non disponibile. Puoi scegliere la cassa.");
   if (d.channel === "TABLE" && !s.ordering.tableEnabled) throw new HttpError(403, "Ordini al tavolo sospesi");
   if (d.channel === "TAKEAWAY" && !s.ordering.takeawayEnabled) throw new HttpError(403, "Asporto non attivo");
   if (d.channel === "DELIVERY" && !s.ordering.deliveryEnabled) throw new HttpError(403, "Consegna non attiva");
@@ -40,10 +42,12 @@ export const POST = handle(async (req: Request) => {
   const order = await createOrder(d, {
     channel: d.channel, customerId: customer.id, customerName: d.name, tableNumber: d.channel === "TABLE" ? d.tableNumber : undefined,
     pickupAt, deliveryAddress: d.channel === "DELIVERY" ? d.address : undefined,
-    paymentMethod: d.channel === "TABLE" ? "AT_COUNTER" : "ON_PICKUP",
+    paymentMethod: d.payment === "STRIPE" ? "STRIPE" : d.channel === "TABLE" ? "AT_COUNTER" : "ON_PICKUP",
   });
   if (!await db.consent.findFirst({ where: { customerId: customer.id, kind: "privacy", source: `ordine:${order.id}` } }))
     await db.consent.create({ data: { customerId: customer.id, kind: "privacy", granted: true, source: `ordine:${order.id}`, textVersion: "privacy-ordini-1" } });
   const notification = await sendOrderEmail(order.id);
-  return NextResponse.json({ id: order.id, number: order.number, emailStatus: notification?.status ?? "not_available" }, { status: 201 });
+  return NextResponse.json({ id: order.id, number: order.number, totalCents: order.finalCents ?? order.estimatedCents,
+    coverCount: order.coverCount, coverUnitCents: order.coverUnitCents,
+    emailStatus: notification?.status ?? "not_available" }, { status: 201 });
 });

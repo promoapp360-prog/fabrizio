@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { customerOrderSchema, requireCounterPayment } from "../src/lib/checkout";
+import { customerOrderSchema, requestedPaymentAvailable } from "../src/lib/checkout";
 
 describe("dati cliente per ordini tavolo e asporto", () => {
   const valid = { name: "Cliente Ordini", email: "CLIENTE@EXAMPLE.INVALID ", phone: "0000000000", privacy: true };
@@ -15,8 +15,9 @@ describe("dati cliente per ordini tavolo e asporto", () => {
     expect(customerOrderSchema.safeParse({ ...valid, phone: "" }).success).toBe(false);
   });
   it("non abilita Stripe prima del collegamento del cliente", () => {
-    expect(requireCounterPayment("STRIPE")).toBe(false);
-    expect(requireCounterPayment("AT_COUNTER")).toBe(true);
-    expect(requireCounterPayment("ON_PICKUP")).toBe(true);
+    expect(requestedPaymentAvailable("STRIPE", false)).toBe(false);
+    expect(requestedPaymentAvailable("STRIPE", true)).toBe(true);
+    expect(requestedPaymentAvailable("AT_COUNTER", false)).toBe(true);
+    expect(requestedPaymentAvailable("ON_PICKUP", false)).toBe(true);
   });
 });

@@ -12,6 +12,7 @@ function add(value) {
   if (typeof value !== "string") return;
   const normalized = normalize(decode(value));
   if (/^(?:Bearer |checkout(?:-cancel)?:)/.test(normalized)) return;
+  if (/^(?:\?pay=online|(?:vecciari-party|party):\{0\})$/.test(normalized)) return;
   if (!normalized || !/\p{L}/u.test(normalized) || /^(?:https?:|\/|@|#[a-fA-F0-9]{3,8}$)/.test(normalized)) return;
   if (/^(?:mailto:|tel:|url\(|rgb\(|\(min-width:|a\[href\]|;\s*Secure|Cache-Control$|Serializable$|Restaurant$|(?:online|order|ordine|res|res-receipt|res-slots|reservation):\{|c-\{)/.test(normalized) ||
       /^\{[0-9]+\}(?:=|T[0-9{]|\/menu$)/.test(normalized) || /^-\{[0-9]+\}px$/.test(normalized)) return;
@@ -68,7 +69,7 @@ await scan(path.join(root, "src/components/public"));
 await scan(path.join(root, "src/app/(site)"));
 await scan(path.join(root, "src/app/t"));
 for (const relative of ["src/app/api/reservations", "src/app/api/online-order", "src/app/api/table", "src/app/api/order"]) await scan(path.join(root, relative));
-for (const relative of ["src/lib/reservation-input.ts", "src/lib/checkout.ts", "src/lib/ordering.ts", "src/lib/pricing.ts", "src/lib/availability.ts", "src/lib/meat-zones.ts", "src/lib/stripe-api.ts", "src/lib/stripe-payments.ts"]) {
+for (const relative of ["src/lib/reservation-input.ts", "src/lib/checkout.ts", "src/lib/ordering.ts", "src/lib/pricing.ts", "src/lib/availability.ts", "src/lib/meat-zones.ts", "src/lib/stripe-api.ts", "src/lib/stripe-payments.ts", "src/lib/portions.ts"]) {
   const full = path.join(root, relative);
   try {
     const body = await fs.readFile(full, "utf8");

@@ -3,6 +3,7 @@ type Payment = { method: string; status: string };
 export type PayableOrder = {
   status: string; hasWeighted: boolean; finalCents: number | null;
   payments: Payment[];
+  pricingPolicy?: string;
 };
 
 export function onlinePaymentState(order: PayableOrder, enabled: boolean, timing: string): OnlinePaymentState {
@@ -13,7 +14,9 @@ export function onlinePaymentState(order: PayableOrder, enabled: boolean, timing
   if (!enabled) return "unavailable";
   if (order.finalCents == null) return "waiting_amount";
   if (order.finalCents < 50 || order.finalCents > 99_999_999) return "unavailable";
-  // Per i tagli a peso finalCents viene valorizzato solo da conferma esplicita dello staff.
+  // Le nuove pezzature hanno un totale definitivo già accettato dal cliente.
+  // Gli ordini storici conservano conferma peso e momento di pagamento originali.
+  if (order.pricingPolicy === "FIXED_PORTIONS") return "ready";
   if (!order.hasWeighted && (order.status === "RECEIVED" || timing !== "ADVANCE" && !["READY", "SERVED"].includes(order.status)))
     return "waiting_restaurant";
   return "ready";

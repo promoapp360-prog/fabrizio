@@ -43,6 +43,15 @@ describe("contenuti e collegamento degli automatismi ordine", () => {
     expect(buildOrderEmail(order, "RECEIVED", "http://localhost").body).not.toContain("Segui l’ordine");
     expect(buildOrderEmail(order, "RECEIVED", "https://restaurant.example/").body).toContain("https://restaurant.example/ordine/test-order");
   });
+  it("descrive pezzatura definitiva e coperti senza richiedere pesatura", () => {
+    const message = buildOrderEmail({ ...order, pricingPolicy: "FIXED_PORTIONS", finalCents: 4200,
+      partySize: 3, coverCount: 3, coverUnitCents: 200,
+      items: [{ quantity: 1, nameSnapshot: "Costata", cooking: null, estWeightGrams: 600, lineEstCents: 3600, lineFinalCents: 3600 }],
+    }, "RECEIVED", "https://restaurant.example", true).body;
+    expect(message).toContain("600 g"); expect(message).toContain("Coperti: 3");
+    expect(message).toContain("42,00"); expect(message).toContain("prezzo della pezzatura scelta è definitivo");
+    expect(message).not.toContain("pesate dal personale");
+  });
   it("distingue Stripe incassato dalla disponibilità di pagamento", () => {
     expect(buildOrderEmail({ ...order, payments: [{ method: "STRIPE", status: "PAID" }] }, "PAID", "").body).toContain("confermato da Stripe");
     expect(buildOrderEmail(order, "FINAL", "https://restaurant.example", true).body).toContain("Puoi pagare online dal riepilogo");

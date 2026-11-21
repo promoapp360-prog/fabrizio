@@ -5,9 +5,10 @@ import { useMenuRefresh } from "./useMenuRefresh";
 import { useLanguage } from "./LanguageProvider";
 import type { MenuData } from "@/lib/menu";
 import { formatEUR, priceLabel, lineCents, isWeighted, type PriceMode } from "@/lib/pricing";
+import { PORTION_NOTICE } from "@/lib/portions";
 
 type P = MenuData["products"][number];
-export type CartLine = { key: string; productId: string; name: string; quantity: number; cooking?: string; optionIds: string[]; optionNames: string[]; notes?: string; estCents: number; weighted: boolean };
+export type CartLine = { key: string; productId: string; name: string; quantity: number; cooking?: string; optionIds: string[]; optionNames: string[]; notes?: string; estCents: number; weighted: boolean; weightGrams?: number };
 
 export default function MenuBrowser({ menu, cooking, cartEnabled = false, onCartChange, cart = [], liveRefresh = true }:
   { menu: MenuData; cooking: string[]; cartEnabled?: boolean; cart?: CartLine[]; onCartChange?: (c: CartLine[]) => void; liveRefresh?: boolean }) {
@@ -52,7 +53,7 @@ export default function MenuBrowser({ menu, cooking, cartEnabled = false, onCart
           <List items={items} onOpen={setOpen} /></section>;
       })}
       {!filtered.length && <p className="mt-10 text-center text-cream/60">Nessun piatto trovato.</p>}
-      {open && <ProductSheet p={open} cooking={cooking} cartEnabled={cartEnabled} onClose={() => setOpen(null)}
+      {open && <ProductSheet key={open.id} p={open} weights={menu.portionWeightsGrams} cooking={cooking} cartEnabled={cartEnabled} onClose={() => setOpen(null)}
         onAdd={line => { onCartChange?.([...cart, line]); setOpen(null); }} />}
     </div>)}</Translated>;
 }
@@ -68,17 +69,18 @@ function List({ items, onOpen }: { items: P[]; onOpen: (p: P) => void }) {
         {!!p.allergens.length && <p className="mt-1 text-[11px] text-cream/50">Allergeni: {p.allergens.map(a => a.name + (a.traces ? " (tracce)" : "")).join(", ")}</p>}
         {!p.available && <p className="mt-1 text-xs text-gold">Non disponibile</p>}
         <p className="mt-2 text-sm text-gold">{p.pricePending ? "Prezzo da definire" : priceLabel(p.priceMode as PriceMode, p.priceCents)}
-          {isWeighted(p.priceMode as PriceMode) && p.estWeightGrams && <span className="ml-2 text-xs text-cream/50">≈ {p.estWeightGrams} g</span>}</p>
+          {isWeighted(p.priceMode as PriceMode) && <span className="ml-2 text-xs text-cream/50">Scegli la pezzatura</span>}</p>
       </div>
     </button></li>))}</ul>}</Translated>;
 }
 
-function ProductSheet({ p, cooking, cartEnabled, onClose, onAdd }: { p: P; cooking: string[]; cartEnabled: boolean; onClose: () => void; onAdd: (l: CartLine) => void }) {
+function ProductSheet({ p, weights, cooking, cartEnabled, onClose, onAdd }: { p: P; weights: number[]; cooking: string[]; cartEnabled: boolean; onClose: () => void; onAdd: (l: CartLine) => void }) {
   const [qty, setQty] = useState(1); const [cook, setCook] = useState<string>(""); const [sel, setSel] = useState<string[]>([]); const [notes, setNotes] = useState("");
+  const [grams, setGrams] = useState(weights[0]);
   const opts = p.groups.flatMap(g => g.options);
   const optCents = sel.reduce((s, id) => s + (opts.find(o => o.id === id)?.priceCents ?? 0), 0);
   const weighted = isWeighted(p.priceMode as PriceMode);
-  const est = lineCents({ priceMode: p.priceMode as PriceMode, unitCents: p.priceCents, optionsCents: optCents, quantity: qty, weightGrams: p.estWeightGrams });
+  const est = lineCents({ priceMode: p.priceMode as PriceMode, unitCents: p.priceCents, optionsCents: optCents, quantity: qty, weightGrams: grams });
   const groupOk = p.groups.every(g => { const n = sel.filter(id => g.options.some(o => o.id === id)).length; return n >= g.min && n <= g.max; });
   const toggle = (g: P["groups"][number], id: string) => {
     const inG = sel.filter(x => g.options.some(o => o.id === x));
@@ -103,7 +105,11 @@ function ProductSheet({ p, cooking, cartEnabled, onClose, onAdd }: { p: P; cooki
         ] as const).filter(([, value]) => !!value).map(([label, value]) => <div key={label}><dt className="inline font-semibold">{label}: </dt><dd className="inline">{value}</dd></div>)}</dl>
         <p className="mt-2 text-sm"><b>Allergeni:</b> {p.allergens.length ? p.allergens.map(a => a.name + (a.traces ? " (tracce)" : "")).join(", ") : "nessuno dichiarato"}. <span className="text-cream/50">Chiedi al personale per informazioni.</span></p>
         {p.pairing && <p className="mt-2 text-sm text-cream/60"><b>Abbinamento:</b> {p.pairing}</p>}
-        {weighted && <p className="mt-3 rounded-lg border border-gold/30 p-3 text-sm">Prezzo a peso: importo <b>indicativo</b> calcolato su ≈{p.estWeightGrams} g. L&apos;importo definitivo sul peso effettivo ti sarà comunicato e confermato prima del pagamento.</p>}
+        {weighted && <div className="mt-4 space-y-2 rounded-lg border border-gold/30 p-3">
+          <label className="block"><span className="label">Scegli la pezzatura</span>
+            <select className="input" value={grams} onChange={e => setGrams(Number(e.target.value))}>
+              {weights.map(weight => <option key={weight} value={weight}>{weight} g · {formatEUR(lineCents({ priceMode: p.priceMode as PriceMode, unitCents: p.priceCents, optionsCents: optCents, quantity: 1, weightGrams: weight }))}</option>)}
+            </select></label><p className="text-xs text-cream/70">{PORTION_NOTICE}</p></div>}
 
         {cartEnabled && !p.pricePending && p.available && <>
           {p.hasCooking && <fieldset className="mt-5"><legend className="label">Cottura *</legend><div className="flex flex-wrap gap-2">{cooking.map(c => <button key={c} type="button" aria-pressed={cook === c} onClick={() => setCook(c)} className={`rounded-full px-3 py-1.5 text-sm ${cook === c ? "bg-gold text-ink" : "border border-cream/20"}`}>{c}</button>)}</div></fieldset>}
@@ -112,9 +118,9 @@ function ProductSheet({ p, cooking, cartEnabled, onClose, onAdd }: { p: P; cooki
           <label className="mt-5 block"><span className="label">Note per la cucina</span><input className="input" maxLength={200} value={notes} onChange={e => setNotes(e.target.value)} /></label>
           <div className="mt-6 flex items-center gap-4">
             <div className="flex items-center rounded-full border border-cream/20"><button className="px-4 py-2" aria-label="Meno" onClick={() => setQty(Math.max(1, qty - 1))}>−</button><span aria-live="polite">{qty}</span><button className="px-4 py-2" aria-label="Più" onClick={() => setQty(Math.min(20, qty + 1))}>+</button></div>
-            <button className="btn-gold flex-1" disabled={(p.hasCooking && !cook) || !groupOk}
-              onClick={() => onAdd({ key: crypto.randomUUID(), productId: p.id, name: p.name, quantity: qty, cooking: cook || undefined, optionIds: sel, optionNames: sel.map(id => opts.find(o => o.id === id)!.name), notes: notes || undefined, estCents: est, weighted })}>
-              Aggiungi · {weighted ? "≈ " : ""}{formatEUR(est)}</button>
+            <button className="btn-gold flex-1" disabled={(p.hasCooking && !cook) || !groupOk || weighted && !weights.includes(grams)}
+              onClick={() => onAdd({ key: crypto.randomUUID(), productId: p.id, name: p.name, quantity: qty, cooking: cook || undefined, optionIds: sel, optionNames: sel.map(id => opts.find(o => o.id === id)!.name), notes: notes || undefined, estCents: est, weighted, weightGrams: weighted ? grams : undefined })}>
+              Aggiungi · {formatEUR(est)}</button>
           </div>
         </>}
       </div>

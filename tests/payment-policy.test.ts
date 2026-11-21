@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 import { onlinePaymentState, hasOpenStripePayment } from "../src/lib/payment-policy";
 const order = { status: "CONFIRMED", hasWeighted: true, finalCents: null as number | null, payments: [] as { method: string; status: string }[] };
 describe("pagamento dell’importo definitivo", () => {
+  it("rende pagabili subito le nuove pezzature e i prodotti a prezzo fisso, senza pesatura o attesa", () => {
+    for (const hasWeighted of [true, false]) expect(onlinePaymentState({
+      ...order, status: "RECEIVED", finalCents: 3600, hasWeighted, pricingPolicy: "FIXED_PORTIONS",
+    }, true, "END")).toBe("ready");
+    expect(onlinePaymentState({ ...order, pricingPolicy: "FIXED_PORTIONS" }, true, "ADVANCE")).toBe("waiting_amount");
+  });
   it("non addebita mai il totale stimato", () => expect(onlinePaymentState(order, true, "ADVANCE")).toBe("waiting_amount"));
   it("consente la carne a peso soltanto dopo conferma finale", () =>
     expect(onlinePaymentState({ ...order, finalCents: 4200 }, true, "END")).toBe("ready"));

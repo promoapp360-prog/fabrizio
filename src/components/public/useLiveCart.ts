@@ -11,12 +11,14 @@ export function useLiveCart(menu: MenuData, cart: CartLine[], setCart: Dispatch<
     const next = cart.flatMap(line => {
       const p = menu.products.find(p => p.id === line.productId);
       if (!p || !p.available || p.pricePending || !p.channels.includes(channel)) return [];
+      if (isWeighted(p.priceMode) && !menu.portionWeightsGrams.includes(line.weightGrams ?? 0)) return [];
       const opts = p.groups.flatMap(g => g.options).filter(o => line.optionIds.includes(o.id));
       const valid = p.groups.every(g => { const count = opts.filter(o => g.options.some(x => x.id === o.id)).length; return count >= g.min && count <= g.max; });
       if (!valid || (p.hasCooking && !line.cooking)) return [];
       return [{ ...line, name: p.name, optionIds: opts.map(o => o.id), optionNames: opts.map(o => o.name),
         cooking: p.hasCooking ? line.cooking : undefined, weighted: isWeighted(p.priceMode),
-        estCents: lineCents({ priceMode: p.priceMode, unitCents: p.priceCents, quantity: line.quantity, weightGrams: p.estWeightGrams, optionsCents: opts.reduce((sum, o) => sum + o.priceCents, 0) }) }];
+        weightGrams: isWeighted(p.priceMode) ? line.weightGrams : undefined,
+        estCents: lineCents({ priceMode: p.priceMode, unitCents: p.priceCents, quantity: line.quantity, weightGrams: line.weightGrams, optionsCents: opts.reduce((sum, o) => sum + o.priceCents, 0) }) }];
     });
     if (JSON.stringify(next) !== JSON.stringify(cart)) {
       setCart(next);

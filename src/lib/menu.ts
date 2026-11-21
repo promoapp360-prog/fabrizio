@@ -1,8 +1,10 @@
 import { db } from "./db";
 import { visibleCategoryIds } from "./category-tree";
+import { getSettings } from "./settings";
 export type MenuData = Awaited<ReturnType<typeof loadMenu>>;
 /** Menu pubblico: sempre letto dal DB, quindi ogni modifica admin è immediatamente visibile. */
 export async function loadMenu(channel?: "TABLE" | "TAKEAWAY" | "DELIVERY" | "ONLINE") {
+  const settings = await getSettings();
   const allCategories = await db.category.findMany({ orderBy: [{ position: "asc" }, { name: "asc" }] });
   const ids = visibleCategoryIds(allCategories);
   const [categories, products, promos] = await Promise.all([
@@ -14,6 +16,8 @@ export async function loadMenu(channel?: "TABLE" | "TAKEAWAY" | "DELIVERY" | "ON
     db.promotion.findMany({ where: { active: true, startsAt: { lte: new Date() }, endsAt: { gte: new Date() } } }),
   ]);
   return {
+    portionWeightsGrams: settings.ordering.portionWeightsGrams,
+    coverCents: settings.ordering.coverCents,
     categories: categories.map(c => ({ id: c.id, name: c.name, parentId: c.parentId, description: c.description, image: c.images[0] ?? null })),
     products: products.map(p => ({
       id: p.id, name: p.name, description: p.description, ingredients: p.ingredients, categoryId: p.categoryId, priceMode: p.priceMode,
