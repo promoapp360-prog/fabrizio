@@ -5,6 +5,7 @@ import { HttpError } from "./api";
 import { onlinePaymentState, onlinePaymentsAvailable } from "./payment-policy";
 import { getCheckoutSession, STRIPE_APPLICATION, stripeRequest, StripeProviderError, type StripeSession, type StripeEvent } from "./stripe-api";
 import { sendOrderEmail } from "./order-email";
+import { formatEUR } from "./pricing";
 
 function publishedPaymentOrigins() {
   return [process.env.PUBLIC_BASE_URL, ...(process.env.PUBLIC_PAYMENT_ORIGINS ?? "").split(",")]
@@ -111,6 +112,7 @@ export async function createCheckout(orderId: string, requestedReturnOrigin?: st
     }
     if (session.status === "open" && session.url) {
       requireMatchingCheckoutReturn(session, returnOrigin, orderId);
+      await sendOrderEmail(orderId, "PAYMENT_PENDING", { staffOnly: true, revision: payment.id });
       return { url: session.url };
     }
     // Checkout concluso non equivale a pagamento fallito: la banca può
@@ -118,11 +120,13 @@ export async function createCheckout(orderId: string, requestedReturnOrigin?: st
     if (session.status !== "expired")
       throw new HttpError(409, "Pagamento online aperto o in verifica. Non pagare nuovamente alla cassa finché il tentativo non è concluso o annullato.");
     await db.payment.updateMany({ where: { id: payment.id, status: "PENDING" }, data: { status: "FAILED" } });
+    await sendOrderEmail(orderId, "PAYMENT_EXPIRED", { staffOnly: true, revision: payment.id });
     throw new HttpError(409, "Tentativo terminato. Premi nuovamente Paga online per riprovare.");
   }
   // Nessun URL è stato consegnato finché externalRef non è stato salvato.
   if (Date.now() - payment.createdAt.getTime() > 35 * 60_000) {
     await db.payment.updateMany({ where: { id: payment.id, status: "PENDING", externalRef: null }, data: { status: "FAILED" } });
+    await sendOrderEmail(orderId, "PAYMENT_EXPIRED", { staffOnly: true, revision: payment.id });
     throw new HttpError(409, "Tentativo scaduto. Premi nuovamente Paga online per riprovare.");
   }
   if (!price) throw new HttpError(409, "Pagamento aggiornato: ricarica il riepilogo.");
@@ -145,12 +149,13 @@ export async function createCheckout(orderId: string, requestedReturnOrigin?: st
   // Also check the provider's response after an idempotent replay (for example
   // a retry on another alias after the first response was lost).
   requireMatchingCheckoutReturn(session, returnOrigin, orderId);
+  await sendOrderEmail(orderId, "PAYMENT_PENDING", { staffOnly: true, revision: payment.id });
   return { url: session.url };
 }
 
 export async function cancelCheckout(orderId: string) {
   if (!await db.order.findUnique({ where: { id: orderId }, select: { id: true } })) throw new HttpError(404, "Ordine non trovato");
-  return db.$transaction(async tx => {
+  const cancelled = await db.$transaction(async tx => {
     const order = await tx.order.update({ where: { id: orderId }, data: { updatedAt: new Date() }, include: { payments: true } });
     const pending = order.payments.filter(p => p.method === "STRIPE" && p.status === "PENDING");
     for (const payment of pending) {
@@ -166,8 +171,10 @@ export async function cancelCheckout(orderId: string) {
       }
       await tx.payment.update({ where: { id: payment.id }, data: { status: "FAILED" } });
     }
-    return { ok: true };
+    return pending.map(payment => payment.id);
   }, { timeout: 30000 });
+  await Promise.all(cancelled.map(paymentId => sendOrderEmail(orderId, "PAYMENT_CANCELLED", { staffOnly: true, revision: paymentId })));
+  return { ok: true };
 }
 
 async function settleSession(session: StripeSession) {
@@ -207,14 +214,33 @@ export async function processStripeEvent(event: StripeEvent) {
       await tx.order.update({ where: { id: metadata.orderId }, data: { updatedAt: new Date() } });
       await tx.payment.updateMany({ where: { id: metadata.paymentId, orderId: metadata.orderId, method: "STRIPE", status: "PENDING", externalRef: session.id }, data: { status: "FAILED" } });
     });
-  } else if (event.type === "charge.refunded" && object.refunded === true) {
+    // Chiavi stabili: ripetere un webhook non duplica l'email al locale.
+    const failed = await db.payment.findFirst({ where: {
+      id: metadata.paymentId, orderId: metadata.orderId, method: "STRIPE", status: "FAILED", externalRef: session.id,
+    } });
+    if (failed) await sendOrderEmail(metadata.orderId, event.type === "checkout.session.expired" ? "PAYMENT_EXPIRED" : "PAYMENT_FAILED", {
+      staffOnly: true, revision: metadata.paymentId,
+    });
+  } else if (event.type === "charge.refunded") {
     const payment = await db.payment.findFirst({ where: { id: metadata.paymentId, orderId: metadata.orderId, method: "STRIPE" } });
     if (!payment?.externalRef) return;
     const session = await getCheckoutSession(payment.externalRef);
-    if (session.payment_intent !== object.payment_intent || object.amount_refunded !== payment.amountCents) throw new HttpError(409, "Rimborso da riconciliare");
+    if (session.payment_intent !== object.payment_intent || typeof object.amount_refunded !== "number" ||
+      !Number.isInteger(object.amount_refunded) || object.amount_refunded <= 0 || object.amount_refunded > payment.amountCents)
+      throw new HttpError(409, "Rimborso da riconciliare");
+    if (object.refunded !== true) {
+      // Non cambiare il saldo storico come se fosse un rimborso totale.
+      await sendOrderEmail(payment.orderId, "PARTIAL_REFUND", {
+        staffOnly: true, revision: event.id,
+        detail: `Rimborso parziale complessivo comunicato da Stripe: ${formatEUR(object.amount_refunded)} su ${formatEUR(payment.amountCents)}. Verificare il saldo con il ristorante.`,
+      });
+      return;
+    }
+    if (object.amount_refunded !== payment.amountCents) throw new HttpError(409, "Rimborso da riconciliare");
     await db.$transaction(async tx => {
       await tx.order.update({ where: { id: payment.orderId }, data: { updatedAt: new Date() } });
       await tx.payment.updateMany({ where: { id: payment.id, status: "PAID" }, data: { status: "REFUNDED" } });
     });
+    await sendOrderEmail(payment.orderId, "REFUNDED");
   }
 }

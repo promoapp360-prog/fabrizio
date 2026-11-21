@@ -7,15 +7,7 @@ import { findShift, checkCapacity, slotsForDay, availableSlotsForDay } from "@/l
 import { reservationDaySchema, reservationInputSchema, todayInRome, type ReservationAvailability } from "@/lib/reservation-input";
 import { getSettings } from "@/lib/settings";
 import { resCode } from "@/lib/util";
-import { notify, notificationId } from "@/lib/notify";
-
-async function notifyReservation(message: Parameters<typeof notify>[0] & { key: string }) {
-  // Prepare the deterministic record atomically before calling the transport:
-  // simultaneous retries must not race on an empty-update Prisma upsert.
-  const { key, ...data } = message;
-  await db.notification.createMany({ data: [{ id: notificationId(key), ...data, status: "queued" }], skipDuplicates: true });
-  return notify(message);
-}
+import { sendReservationEmail } from "@/lib/reservation-email";
 
 export const GET = handle(async (req: Request) => {
   rateLimit(`res-slots:${clientIp(req)}`, 120, 60_000);
@@ -110,12 +102,6 @@ export const POST = handle(async (req: Request) => {
     }
   }
   if (!result) throw new HttpError(409, "Disponibilità da aggiornare");
-  const formatted = result.startsAt.toLocaleString("it-IT", { timeZone: "Europe/Rome", dateStyle: "long", timeStyle: "short" });
-  const email = await notifyReservation({
-    channel: "email", to: result.customer.email!, subject: `Vecciarì · Prenotazione ${result.code}`, customerId: result.customerId,
-    key: `reservation:${result.id}:RECEIVED`,
-    body: `Grazie ${result.customer.name}, abbiamo ricevuto la tua richiesta per ${result.people} persone il ${formatted}. Codice: ${result.code}. Stato: ${result.status === "CONFIRMED" ? "confermata" : "in attesa di conferma dal ristorante"}.`,
-  });
-  await notifyReservation({ channel: "internal", to: "staff", key: `reservation:${result.id}:STAFF`, body: `Nuova prenotazione ${result.code} – ${result.people} persone · ${formatted}` });
-  return NextResponse.json({ id: result.id, code: result.code, status: result.status, emailStatus: email.status }, { status: created ? 201 : 200 });
+  const email = await sendReservationEmail(result.id);
+  return NextResponse.json({ id: result.id, code: result.code, status: result.status, emailStatus: email?.status ?? "not_available" }, { status: created ? 201 : 200 });
 });

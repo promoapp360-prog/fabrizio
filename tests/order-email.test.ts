@@ -5,7 +5,7 @@ vi.mock("../src/lib/db", () => ({ db: { order: { findUniqueOrThrow: mocks.findUn
 vi.mock("../src/lib/notify", () => ({ notify: mocks.notify }));
 vi.mock("../src/lib/orders", () => ({ STATUS_LABEL: { RECEIVED: "Ricevuto", READY: "Pronto" } }));
 vi.mock("../src/lib/settings", () => ({ getSettings: async () => ({ ordering: { stripeEnabled: false } }) }));
-import { buildOrderEmail, sendOrderEmail, type OrderEmailData } from "../src/lib/order-email";
+import { buildOrderEmail, buildRestaurantOrderEmail, sendOrderEmail, type OrderEmailData } from "../src/lib/order-email";
 
 const order: OrderEmailData = {
   id: "test-order", number: 123, channel: "TAKEAWAY", tableNumber: null,
@@ -63,10 +63,45 @@ describe("contenuti e collegamento degli automatismi ordine", () => {
       channel: "email", to: "customer@example.invalid", customerId: "customer",
       key: `order:test-order:${event}${event === "FINAL" ? ":2750" : ""}`,
     }));
+    expect(mocks.notify).toHaveBeenCalledWith(expect.objectContaining({
+      channel: "email", to: "vecciarimatera@gmail.com",
+      key: `restaurant:order:test-order:${event}${event === "FINAL" ? ":2750" : ""}`,
+    }));
   });
-  it("non invia in assenza di email cliente", async () => {
+  it("avvisa comunque il locale in assenza di email cliente", async () => {
     mocks.findUniqueOrThrow.mockResolvedValue({ ...order, customer: null });
     expect(await sendOrderEmail(order.id)).toBeNull();
-    expect(mocks.notify).not.toHaveBeenCalled();
+    expect(mocks.notify).toHaveBeenCalledTimes(1);
+    expect(mocks.notify).toHaveBeenCalledWith(expect.objectContaining({ to: "vecciarimatera@gmail.com" }));
+  });
+  it("include recapiti, opzioni, note delle righe e indirizzo nella copia al locale", () => {
+    const staff = buildRestaurantOrderEmail({ ...order,
+      customer: { name: "Cliente", email: "customer@example.invalid", phone: "0000000000" },
+      deliveryAddress: "Indirizzo fixture",
+      items: [{ ...order.items[0], options: [{ name: "Contorno fixture" }], notes: "Nota riga fixture" }],
+    }, buildOrderEmail(order, "RECEIVED", "").body);
+    for (const text of ["customer@example.invalid", "0000000000", "Indirizzo fixture", "Contorno fixture", "Nota riga fixture", "ritiro a nome Nome ritiro"])
+      expect(staff).toContain(text);
+    expect(staff).not.toContain("Ciao Nome ritiro");
+  });
+  it.each(["WEIGHT_UPDATED", "PAYMENT_PENDING", "PAYMENT_CANCELLED", "PAYMENT_FAILED", "PAYMENT_EXPIRED", "PARTIAL_REFUND"])(
+    "%s può avvisare soltanto il locale, con chiave specifica del tentativo", async event => {
+      mocks.findUniqueOrThrow.mockResolvedValue({ ...order, customer: { id: "customer", name: "Cliente", email: "customer@example.invalid" } });
+      await sendOrderEmail(order.id, event, { staffOnly: true, revision: "payment-fixture" });
+      expect(mocks.notify).toHaveBeenCalledTimes(1);
+      expect(mocks.notify).toHaveBeenCalledWith(expect.objectContaining({
+        to: "vecciarimatera@gmail.com", key: `restaurant:order:test-order:${event}:payment-fixture`,
+      }));
+    });
+  it("non descrive come non addebitato un ordine già pagato o rimborsato", () => {
+    for (const event of ["READY", "SERVED"]) {
+      const message = buildOrderEmail({ ...order, payments: [{ method: "STRIPE", status: "PAID" }] }, event, "", false).body;
+      expect(message).toContain("confermato da Stripe");
+      expect(message).not.toContain("Nessun addebito");
+    }
+    const refund = buildOrderEmail({ ...order, payments: [{ method: "STRIPE", status: "REFUNDED" }] }, "REFUNDED", "").body;
+    expect(refund).toContain("Pagamento rimborsato");
+    expect(refund).not.toContain("Nessun addebito");
+    expect(refund).not.toContain("Puoi pagare online");
   });
 });

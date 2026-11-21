@@ -7,8 +7,13 @@ import { createHash } from "node:crypto";
  */
 export async function notify(n: { channel: "email" | "whatsapp" | "internal"; to: string; subject?: string; body: string; customerId?: string; key?: string }) {
   const { key, ...data } = n;
+  // INSERT ... ON CONFLICT DO NOTHING: due webhook concorrenti non devono
+  // gareggiare su un upsert emulato prima di acquisire il blocco d'invio.
+  if (key) await db.notification.createMany({
+    data: [{ id: notificationId(key), ...data, status: "queued" }], skipDuplicates: true,
+  });
   const rec = key
-    ? await db.notification.upsert({ where: { id: notificationId(key) }, create: { id: notificationId(key), ...data, status: "queued" }, update: {} })
+    ? await db.notification.findUniqueOrThrow({ where: { id: notificationId(key) } })
     : await db.notification.create({ data: { ...data, status: "queued" } });
   if (["sent", "sending", "delivery_unknown"].includes(rec.status)) return rec;
   let acceptedByProvider = false;

@@ -94,7 +94,8 @@ export const PATCH = handle(async (req: Request, { params }: { params: Promise<{
     const payment = await tx.payment.create({ data: { orderId: id, method: body.method, status: "PAID", amountCents: body.amountCents, recordedBy: user.id } });
     return { data: payment, emailEvent: "PAID" };
   });
-  await audit(user.id, `order_${body.action}`, "Order", id);
+  const entry = await audit(user.id, `order_${body.action}`, "Order", id);
   if (result.emailEvent) await sendOrderEmail(id, result.emailEvent);
+  else if (body.action === "weight") await sendOrderEmail(id, "WEIGHT_UPDATED", { staffOnly: true, revision: entry.id });
   return NextResponse.json(result.data);
 });

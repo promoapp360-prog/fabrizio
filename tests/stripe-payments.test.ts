@@ -120,6 +120,7 @@ describe("checkout e incassi: provider e database simulati", () => {
     expect(await createCheckout(order.id)).toEqual({ url: session.url });
     expect(m.session).toHaveBeenCalledWith(session.id);
     expect(m.db.payment.create).not.toHaveBeenCalled();
+    expect(m.email).toHaveBeenCalledWith(order.id, "PAYMENT_PENDING", { staffOnly: true, revision: "payment_fixture" });
   });
   it.each(["https://www.vecciari.com", "https://www.vecciari.it", "https://vecciari.replit.app"])(
     "mantiene successo, annullamento e ripresa sul dominio ufficiale %s", async origin => {
@@ -237,6 +238,7 @@ describe("checkout e incassi: provider e database simulati", () => {
     addPending(); await cancelCheckout(order.id);
     expect(m.stripe).toHaveBeenCalledWith("/checkout/sessions/cs_test_fixture/expire", {});
     expect(order.payments[0].status).toBe("FAILED");
+    expect(m.email).toHaveBeenCalledWith(order.id, "PAYMENT_CANCELLED", { staffOnly: true, revision: "payment_fixture" });
   });
   it("non sblocca la cassa se Stripe ha già incassato", async () => {
     addPending(); session.status = "complete"; session.payment_status = "paid";
@@ -270,6 +272,25 @@ describe("checkout e incassi: provider e database simulati", () => {
       id: "ch_fixture", metadata: session.metadata, payment_intent: "pi_fixture", refunded: true, amount_refunded: 4200,
     } } });
     expect(order.payments[0].status).toBe("REFUNDED");
+    expect(m.email).toHaveBeenCalledWith(order.id, "REFUNDED");
+  });
+  it.each(["checkout.session.expired", "checkout.session.async_payment_failed"])(
+    "notifica al locale %s con chiave stabile per il replay del webhook", async type => {
+      addPending(); session.status = "expired";
+      await processStripeEvent(event(type)); await processStripeEvent(event(type));
+      expect(order.payments[0].status).toBe("FAILED");
+      const expected = type === "checkout.session.expired" ? "PAYMENT_EXPIRED" : "PAYMENT_FAILED";
+      expect(m.email).toHaveBeenCalledWith(order.id, expected, { staffOnly: true, revision: "payment_fixture" });
+    });
+  it("notifica un rimborso parziale senza segnare il pagamento come interamente rimborsato", async () => {
+    addPending().status = "PAID";
+    await processStripeEvent({ ...event("charge.refunded"), data: { object: {
+      id: "ch_fixture", metadata: session.metadata, payment_intent: "pi_fixture", refunded: false, amount_refunded: 1000,
+    } } });
+    expect(order.payments[0].status).toBe("PAID");
+    expect(m.email).toHaveBeenCalledWith(order.id, "PARTIAL_REFUND", expect.objectContaining({
+      staffOnly: true, revision: "evt_fixture", detail: expect.stringContaining("10,00"),
+    }));
   });
   it("rifiuta richieste di pagamento da siti esterni", () => {
     expect(() => requirePaymentOrigin(new Request("https://restaurant.example/api", { headers: { origin: "https://other.example" } }))).toThrow("Origine");

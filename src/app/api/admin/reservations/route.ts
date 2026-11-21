@@ -5,6 +5,7 @@ import { handle } from "@/lib/api";
 import { requirePermission } from "@/lib/auth";
 import { resCode } from "@/lib/util";
 import { audit } from "@/lib/audit";
+import { sendReservationEmail } from "@/lib/reservation-email";
 
 // GET ?from&to → elenco calendario. POST → prenotazione telefonica/walk-in (lo staff può forzare).
 export const GET = handle(async (req: Request) => {
@@ -18,5 +19,6 @@ export const POST = handle(async (req: Request) => {
   const c = await db.customer.create({ data: { name: d.name, phone: d.phone } });
   const r = await db.reservation.create({ data: { code: resCode(), customerId: c.id, startsAt: d.startsAt, endsAt: new Date(d.startsAt.getTime() + 2 * 3600_000), people: d.people, tableId: d.tableId, notes: d.notes, source: d.source, status: d.status } });
   await audit(u.id, "reservation_manual", "Reservation", r.id);
+  await sendReservationEmail(r.id);
   return NextResponse.json(r, { status: 201 });
 });
