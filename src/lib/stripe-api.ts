@@ -3,6 +3,9 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { HttpError } from "./api";
 
 export const STRIPE_APPLICATION = "vecciari";
+// Il contratto Checkout dell'app non deve cambiare con la versione predefinita
+// del conto Stripe. Aggiornare questa versione solo con verifiche di compatibilità.
+export const STRIPE_API_VERSION = "2025-02-24.acacia";
 type Fields = Record<string, string | number | boolean | undefined>;
 export type StripeSession = {
   id: string; object: string; status: string; payment_status: string; url: string | null;
@@ -26,7 +29,8 @@ async function request<T>(path: string, fields?: Fields, idempotencyKey?: string
   try {
     response = await fetch(`https://api.stripe.com/v1${path}`, {
       method: body ? "POST" : "GET", cache: "no-store",
-      headers: { Authorization: `Bearer ${key}`, ...(body ? { "Content-Type": "application/x-www-form-urlencoded" } : {}),
+      headers: { Authorization: `Bearer ${key}`, "Stripe-Version": STRIPE_API_VERSION,
+        ...(body ? { "Content-Type": "application/x-www-form-urlencoded" } : {}),
         ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}) },
       body, signal: AbortSignal.timeout(8000),
     });

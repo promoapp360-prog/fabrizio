@@ -68,6 +68,27 @@ describe("checkout e incassi: provider e database simulati", () => {
     await expect(createCheckout(order.id)).rejects.toThrow();
     expect(m.stripe).not.toHaveBeenCalled();
   });
+  it("mantiene scadenza valida e identica nei retry di una preparazione incompleta", async () => {
+    const payment = addPending(null);
+    payment.createdAt = new Date(Date.now() - 34 * 60_000);
+    const expectedExpiry = Math.floor(payment.createdAt.getTime() / 1000) + 2 * 60 * 60;
+    m.stripe.mockImplementation(async path => {
+      if (path === "/checkout/sessions") throw new Error("provider unavailable");
+      return { data: [{ id: "price_fixture", currency: "eur", unit_amount: 4200, product: "vecciari_order_balance", type: "one_time" }] };
+    });
+    await expect(createCheckout(order.id)).rejects.toThrow("provider unavailable");
+    await expect(createCheckout(order.id)).rejects.toThrow("provider unavailable");
+    const calls = m.stripe.mock.calls.filter(([path]) => path === "/checkout/sessions");
+    expect(calls).toHaveLength(2);
+    for (const [, fields, key] of calls) {
+      expect(fields.expires_at).toBe(expectedExpiry);
+      expect(fields.expires_at - Date.now() / 1000).toBeGreaterThan(30 * 60);
+      expect(fields["payment_method_types[0]"]).toBe("card");
+      expect(key).toBe("vecciari-checkout-payment_fixture");
+    }
+    expect(m.db.payment.create).not.toHaveBeenCalled();
+    expect(order.payments).toHaveLength(1);
+  });
   it("ritorna sul medesimo alias autorizzato preservando la sessione del cliente", async () => {
     vi.stubEnv("PUBLIC_PAYMENT_ORIGINS", "https://alias.restaurant.example");
     const origin = requirePaymentOrigin(new Request("https://alias.restaurant.example/api", { headers: { origin: "https://alias.restaurant.example" } }));

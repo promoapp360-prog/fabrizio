@@ -1,6 +1,6 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { createHmac } from "node:crypto";
-import { verifiedStripeEvent, stripeRequest } from "../src/lib/stripe-api";
+import { verifiedStripeEvent, stripeRequest, STRIPE_API_VERSION } from "../src/lib/stripe-api";
 const now = 1800000000000;
 const secret = "whsec_fixture_not_a_real_secret";
 const payload = JSON.stringify({ id: "evt_fixture", type: "checkout.session.completed", livemode: false, data: { object: {} } });
@@ -13,6 +13,23 @@ beforeEach(() => {
 });
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 describe("sicurezza Stripe senza richieste reali", () => {
+  it("fissa il contratto API per verifica conto, letture e creazione Checkout", async () => {
+    vi.stubEnv("STRIPE_EXPECTED_ACCOUNT_ID", "acct_version_fixture");
+    const network = vi.fn().mockImplementation(async (url: string) => Response.json(
+      url.endsWith("/account")
+        ? { id: "acct_version_fixture", charges_enabled: true, default_currency: "eur" }
+        : { id: "cs_test_version_fixture" }
+    ));
+    vi.stubGlobal("fetch", network);
+    await stripeRequest("/prices");
+    await stripeRequest("/checkout/sessions", { mode: "payment", "payment_method_types[0]": "card" }, "fixture-idempotency");
+    expect(network).toHaveBeenCalledTimes(3);
+    for (const [, options] of network.mock.calls) {
+      expect(options.headers["Stripe-Version"]).toBe("2025-02-24.acacia");
+      expect(options.headers["Stripe-Version"]).toBe(STRIPE_API_VERSION);
+    }
+    expect(network.mock.calls[2][1].headers["Idempotency-Key"]).toBe("fixture-idempotency");
+  });
   it("accetta esclusivamente un evento firmato recente", () => {
     expect(verifiedStripeEvent(payload, sign(payload), now).id).toBe("evt_fixture");
     expect(() => verifiedStripeEvent(payload, null, now)).toThrow();

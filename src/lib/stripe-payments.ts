@@ -116,7 +116,10 @@ export async function createCheckout(orderId: string, requestedReturnOrigin?: st
     "payment_intent_data[description]": `Vecciarì — ordine n° ${reservation.number}`,
     success_url: `${returnOrigin}/ordine/${orderId}?pagamento=verifica`,
     cancel_url: `${returnOrigin}/ordine/${orderId}?pagamento=annullato`,
-    expires_at: Math.floor(payment.createdAt.getTime() / 1000) + 31 * 60,
+    // Stripe richiede almeno 30 minuti residui alla creazione. Il valore
+    // resta deterministico per l'idempotenza e valido durante tutti i 35
+    // minuti in cui si può riprovare una preparazione senza externalRef.
+    expires_at: Math.floor(payment.createdAt.getTime() / 1000) + 2 * 60 * 60,
   }, `vecciari-checkout-${payment.id}`);
   if (!session.url || !session.url.startsWith("https://checkout.stripe.com/")) throw new HttpError(503, "Checkout Stripe non disponibile");
   await db.payment.update({ where: { id: payment.id }, data: { externalRef: session.id } });
