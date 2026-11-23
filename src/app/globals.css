@@ -60,9 +60,8 @@ html[dir="rtl"] input[type="datetime-local"] { direction: ltr; text-align: start
 .new-year-teaser:hover { border-color: rgb(var(--c-gold) / .8); background: rgb(var(--c-ink) / .9); }
 .new-year-teaser:focus-visible { outline: 2px solid rgb(var(--c-gold)); outline-offset: 4px; }
 .new-year-teaser-date { font-size: 9px; line-height: 1.4; letter-spacing: .18em; text-transform: uppercase; color: rgb(var(--c-gold)); }
-.new-year-teaser-title { font-family: "Aloevera",sans-serif; font-size: 16px; line-height: 1.2; }
-.new-year-teaser-details { font-size: 11px; line-height: 1.5; color: rgb(var(--c-cream) / .8); }
-.new-year-teaser-link { margin-top: 2px; font-size: 11px; line-height: 1.5; color: rgb(var(--c-gold)); }
+.new-year-teaser-title { font-family: "Kurdis",system-ui,sans-serif; font-size: clamp(24px,5.8vw,28px); font-weight: 400; line-height: 1.08; text-transform: uppercase; }
+.new-year-teaser-link { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; margin-top: 6px; padding: 6px 16px; border-radius: 999px; background: linear-gradient(135deg,#F6E27A,#E9C23A 45%,#C9961E); color: rgb(var(--c-ink)); font-size: 12px; font-weight: 600; line-height: 1.5; }
 @media (min-width: 768px) {
   .restaurant-hero { height: auto; aspect-ratio: 1024 / 539; min-height: 520px; max-height: 880px; }
   .restaurant-hero picture img { object-fit: cover; }
