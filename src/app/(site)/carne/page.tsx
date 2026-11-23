@@ -2,7 +2,12 @@ import Translated from "@/components/public/ServerTranslated";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import CowMap from "@/components/public/CowMap";
-export const metadata = { title: "Il mondo della carne", description: "Razze, allevamenti e atlante dei tagli." };
+import { createPageMetadata } from "@/lib/page-metadata";
+export const generateMetadata = () => createPageMetadata({
+  title: "Carni alla brace a Matera: razze e tagli",
+  description: "Scopri razze, tagli e caratteristiche delle carni presentate da Vecciarì, ristorante alla brace in Via XX Settembre 14 a Matera.",
+  path: "/carne",
+});
 
 export default async function Carne() {
   const [breeds, cuts, farming] = await Promise.all([

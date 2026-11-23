@@ -4,6 +4,8 @@ export const DEFAULT_SEO = {
 };
 
 export const DEFAULT_FAVICON = "/icon-96.png";
+export const SEO_IMAGE = "/brand/vecciari-social.jpg";
+export const SITE_ORIGIN = process.env.PUBLIC_BASE_URL || "https://www.vecciari.com";
 
 // Aggiorna soltanto i vecchi valori iniziali, anche se salvati nel CMS di
 // produzione. Le personalizzazioni dell'Admin non vanno sovrascritte.
@@ -17,4 +19,9 @@ export function resolveSeo(seo: typeof DEFAULT_SEO): typeof DEFAULT_SEO {
 
 export function resolveFavicon(url: string): string {
   return url === "/icon-32.png" ? DEFAULT_FAVICON : url;
+}
+
+export function canonicalPath(pathname: string): string {
+  const cleanPath = pathname.split(/[?#]/, 1)[0].replace(/\/+$/, "");
+  return cleanPath || "/";
 }

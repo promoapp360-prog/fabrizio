@@ -1,9 +1,17 @@
 import Translated from "@/components/public/ServerTranslated";
 import { getSettings } from "@/lib/settings";
 import ReservationForm from "./ReservationForm";
+import { createPageMetadata } from "@/lib/page-metadata";
 type Search = Promise<{ richiesta?: string }>;
 export async function generateMetadata({ searchParams }: { searchParams: Search }) {
-  return { title: "Prenota un tavolo", ...((await searchParams).richiesta ? { robots: { index: false, follow: false } } : {}) };
+  return {
+    ...await createPageMetadata({
+      title: "Prenota un tavolo a Matera",
+      description: "Prenota online da Vecciarì, in Via XX Settembre 14 a Matera: scegli il giorno, il turno e l’orario disponibili per la tua visita.",
+      path: "/prenota",
+    }),
+    ...((await searchParams).richiesta ? { robots: { index: false, follow: false } } : {}),
+  };
 }
 export default async function Prenota({ searchParams }: { searchParams: Search }) {
   const s = await getSettings();

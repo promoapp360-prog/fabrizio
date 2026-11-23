@@ -2,14 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Translated from "@/components/public/ServerTranslated";
 import { NEW_YEAR_EVENT, newYearMenu } from "@/lib/new-year-event";
+import { createPageMetadata } from "@/lib/page-metadata";
 
-const title = "Cena con delitto · 31 dicembre 2026 · Vecciarì, Matera";
-const description = "Il 31 dicembre 2026 festeggia da Vecciarì a Matera: cena con delitto, menù di fine anno a 60 € a persona e 100 posti totali. Informazioni e prenotazioni su VivoEventi.";
-export const metadata: Metadata = {
-  title, description,
-  alternates: { canonical: NEW_YEAR_EVENT.path },
-  openGraph: { title, description, type: "website", url: NEW_YEAR_EVENT.path },
-};
+export const generateMetadata = (): Promise<Metadata> => createPageMetadata({
+  title: "Cena con delitto a Matera, 31 dicembre 2026",
+  description: "Il 31 dicembre 2026, cena con delitto da Vecciarì a Matera: menù di fine anno a 60 € a persona. Informazioni e prenotazioni su VivoEventi.",
+  path: NEW_YEAR_EVENT.path,
+});
 
 export default function Capodanno() {
   return <Translated>{(

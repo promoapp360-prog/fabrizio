@@ -1,7 +1,12 @@
 import Translated from "@/components/public/ServerTranslated";
 import { db } from "@/lib/db";
 import CompanyDetails from "@/components/public/CompanyDetails";
-export const metadata = { title: "Cookie" };
+import { createPageMetadata } from "@/lib/page-metadata";
+export const generateMetadata = () => createPageMetadata({
+  title: "Cookie policy del sito",
+  description: "Scopri quali cookie utilizza il sito di Vecciarì a Matera e come gestire le preferenze per i cookie non essenziali.",
+  path: "/cookie",
+});
 // Testo modificabile da Admin › Contenuti (pagina "cookie", sezione richtext).
 export default async function P() {
   const page = await db.page.findUnique({ where: { slug: "cookie" }, include: { sections: { where: { enabled: true }, orderBy: { position: "asc" } } } });

@@ -5,11 +5,17 @@ import { db } from "@/lib/db";
 import Meter from "@/components/public/Meter";
 import { priceLabel, type PriceMode } from "@/lib/pricing";
 import { loadMenu } from "@/lib/menu";
+import { createPageMetadata } from "@/lib/page-metadata";
 
 export async function generateMetadata({ params: pendingParams }: { params: Promise<{ slug: string }> }) {
   const params = await pendingParams;
   const b = await db.breed.findUnique({ where: { slug: params.slug } });
-  return { title: b?.name ?? "Razza", description: b?.tasting ?? undefined };
+  return createPageMetadata({
+    title: b?.name ?? "Razza bovina",
+    description: b?.tasting ?? "Scopri razze, tagli e caratteristiche delle carni presentate da Vecciarì, ristorante alla brace in Via XX Settembre 14 a Matera.",
+    path: `/carne/razze/${encodeURIComponent(params.slug)}`,
+    appendMatera: true,
+  });
 }
 
 export default async function Razza({ params: pendingParams }: { params: Promise<{ slug: string }> }) {

@@ -1,7 +1,12 @@
 import Translated from "@/components/public/ServerTranslated";
 import { db } from "@/lib/db";
 import CompanyDetails from "@/components/public/CompanyDetails";
-export const metadata = { title: "Privacy" };
+import { createPageMetadata } from "@/lib/page-metadata";
+export const generateMetadata = () => createPageMetadata({
+  title: "Privacy e dati personali",
+  description: "Leggi l’informativa sul trattamento dei dati personali per prenotazioni, ordini e servizi del ristorante Vecciarì a Matera.",
+  path: "/privacy",
+});
 // Testo modificabile da Admin › Contenuti (pagina "privacy", sezione richtext).
 export default async function P() {
   const page = await db.page.findUnique({ where: { slug: "privacy" }, include: { sections: { where: { enabled: true }, orderBy: { position: "asc" } } } });

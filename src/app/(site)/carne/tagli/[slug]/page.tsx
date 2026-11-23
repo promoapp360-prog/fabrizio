@@ -5,11 +5,17 @@ import { db } from "@/lib/db";
 import { ZONES } from "@/lib/meat-zones";
 import { loadMenu } from "@/lib/menu";
 import { priceLabel, type PriceMode } from "@/lib/pricing";
+import { createPageMetadata } from "@/lib/page-metadata";
 
 export async function generateMetadata({ params: pendingParams }: { params: Promise<{ slug: string }> }) {
   const params = await pendingParams;
   const c = await db.cut.findUnique({ where: { slug: params.slug } });
-  return { title: c?.name ?? "Taglio", description: c?.description ?? undefined };
+  return createPageMetadata({
+    title: c?.name ?? "Taglio di carne",
+    description: c?.description ?? "Scopri razze, tagli e caratteristiche delle carni presentate da Vecciarì, ristorante alla brace in Via XX Settembre 14 a Matera.",
+    path: `/carne/tagli/${encodeURIComponent(params.slug)}`,
+    appendMatera: true,
+  });
 }
 
 export default async function Taglio({ params: pendingParams }: { params: Promise<{ slug: string }> }) {

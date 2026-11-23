@@ -1,18 +1,14 @@
 import Translated from "@/components/public/ServerTranslated";
 import Link from "next/link";
 import Image from "next/image";
+import { createPageMetadata } from "@/lib/page-metadata";
 
-export const metadata = {
+export const generateMetadata = () => createPageMetadata({
   title: "Le origini di Vecciarì, storia e tradizione a Matera",
-  description:
-    "Il nome Vecciarì richiama le antiche macellerie materane e la tradizione di Via delle Beccherie: una storia che continua a tavola.",
-  openGraph: {
-    title: "Le origini di Vecciarì, storia e tradizione a Matera",
-    description:
-      "Un nome antico, una storia che continua. Scopri le radici materane di Vecciarì — Grano & Brace.",
-    type: "article",
-  },
-};
+  description: "Il nome Vecciarì richiama le antiche macellerie materane e la tradizione di Via delle Beccherie: una storia che continua a tavola.",
+  path: "/storia",
+  type: "article",
+});
 
 export default function Storia() {
   return <Translated>{(

@@ -7,18 +7,27 @@ import { NEW_YEAR_EVENT, newYearMenu } from "../src/lib/new-year-event";
 
 vi.mock("../src/components/public/ServerTranslated", () => ({ default: ({ children }: { children: ReactNode }) => children }));
 vi.mock("next/link", () => ({ default: ({ children, href, ...props }: { children: ReactNode; href: string }) => createElement("a", { ...props, href }, children) }));
-import Capodanno, { metadata } from "../src/app/(site)/capodanno-2026/page";
+vi.mock("../src/lib/page-metadata", () => ({
+  createPageMetadata: ({ title, description, path }: { title: string; description: string; path: string }) => ({
+    title, description, alternates: { canonical: path },
+  }),
+}));
+import Capodanno, { generateMetadata } from "../src/app/(site)/capodanno-2026/page";
 
 describe("serata Capodanno Vecciarì", () => {
   const html = () => renderToStaticMarkup(createElement(Capodanno));
-  it("pubblica data, prezzo e capienza totali confermati, non quelli della locandina di Roma", () => {
+  it("pubblica data, prezzo e capienza totali confermati, non quelli della locandina di Roma", async () => {
     expect(NEW_YEAR_EVENT).toMatchObject({ date: "2026-12-31", priceCents: 6000, totalSeats: 100 });
     const page = html();
     for (const text of ["31 dicembre 2026", "60 € a persona", "100 posti totali"]) expect(page).toContain(text);
     expect(page).toContain("Cena con delitto da Vecciarì");
     expect(page).not.toContain("Capodanno con delitto");
     expect(page).not.toMatch(/15\s*€|ROMA|704|posti rimasti/);
-    expect(metadata.title).toContain("Matera");
+    expect(await generateMetadata()).toMatchObject({
+      title: "Cena con delitto a Matera, 31 dicembre 2026",
+      description: expect.stringContaining("60 € a persona"),
+      alternates: { canonical: NEW_YEAR_EVENT.path },
+    });
   });
   it("mantiene tutte le portate, le alternative, le bevande e l’avviso allergie forniti", () => {
     const page = html();
