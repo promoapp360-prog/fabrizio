@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 
 const directory = new URL("../src/lib/i18n/", import.meta.url);
 const sources = JSON.parse(await fs.readFile(new URL("source.json", directory), "utf8"));
-const codes = ["es", "pt", "ru", "uk", "ko", "zh", "el", "nl", "hr", "sr", "sl", "mk", "bs", "ro", "pl", "cs", "sq", "he", "bg"];
+const codes = ["en", "fr", "es", "pt", "ru", "uk", "ko", "zh", "el", "nl", "hr", "sr", "sl", "mk", "bs", "ro", "pl", "cs", "sq", "he", "bg"];
 const placeholders = value => (value.match(/\{\d+\}/g) || []).sort().join(",");
 let failures = 0;
 for (const code of codes) {

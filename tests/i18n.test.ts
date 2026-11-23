@@ -4,15 +4,31 @@ import { isLanguage, languageDirection, languages } from "../src/lib/i18n/langua
 import { createElement, isValidElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { translateTree } from "../src/lib/i18n/translate-tree";
+import { readFileSync } from "node:fs";
+import en from "../src/lib/i18n/dictionaries/en.json";
+import fr from "../src/lib/i18n/dictionaries/fr.json";
 
 describe("Lingue del sito pubblico", () => {
-  it("comprende l’italiano e tutte le 19 lingue della foto", () => {
-    expect(languages).toHaveLength(20);
-    expect(new Set(languages.map(item => item.code)).size).toBe(20);
+  it("comprende italiano, inglese, francese e tutte le 19 lingue della foto", () => {
+    expect(languages).toHaveLength(22);
+    expect(new Set(languages.map(item => item.code)).size).toBe(22);
+    expect(isLanguage("en")).toBe(true);
+    expect(isLanguage("fr")).toBe(true);
     expect(isLanguage("he")).toBe(true);
     expect(isLanguage("javascript:alert(1)")).toBe(false);
     expect(isLanguage("../../admin")).toBe(false);
   });
+  it.each([{ code: "en", dictionary: en }, { code: "fr", dictionary: fr }])(
+    "$code copre tutti i testi pubblici senza alterare segnaposti e dati canonici", ({ dictionary }) => {
+      const source: string[] = JSON.parse(readFileSync(new URL("../src/lib/i18n/source.json", import.meta.url), "utf8"));
+      const translated: Record<string, string> = dictionary;
+      for (const key of source) {
+        expect(translated[key]?.trim(), key).toBeTruthy();
+        expect((translated[key].match(/\{\d+\}/g) || []).sort(), key).toEqual((key.match(/\{\d+\}/g) || []).sort());
+      }
+      expect(makeTranslator(dictionary)("Cena con delitto da Vecciarì")).not.toContain("Cena con delitto");
+      expect(makeTranslator(dictionary)("25,00 € a porzione")).toContain("25,00 €");
+    });
   it("usa destra-sinistra solo per l’ebraico", () => {
     expect(languageDirection("he")).toBe("rtl");
     expect(languageDirection("ru")).toBe("ltr");

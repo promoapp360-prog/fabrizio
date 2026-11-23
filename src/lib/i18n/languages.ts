@@ -1,6 +1,8 @@
 export const LANGUAGE_COOKIE = "vecciari_language";
 export const languages = [
   { code: "it", name: "Italiano", flag: "🇮🇹", locale: "it-IT" },
+  { code: "en", name: "English", flag: "🇬🇧", locale: "en-GB" },
+  { code: "fr", name: "Français", flag: "🇫🇷", locale: "fr-FR" },
   { code: "es", name: "Español", flag: "🇪🇸", locale: "es-ES" },
   { code: "pt", name: "Português", flag: "🇧🇷", locale: "pt-BR" },
   { code: "ru", name: "Русский", flag: "🇷🇺", locale: "ru-RU" },

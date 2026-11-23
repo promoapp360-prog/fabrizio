@@ -7,9 +7,11 @@ import { menu, PHONE, TOKEN } from "../data";
 import ReservationForm from "@/app/(site)/prenota/ReservationForm";
 import NewYearEventTeaser from "@/components/public/NewYearEventTeaser";
 import LanguageProvider from "@/components/public/LanguageProvider";
+import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import es from "@/lib/i18n/dictionaries/es.json";
 import he from "@/lib/i18n/dictionaries/he.json";
 import "@/app/globals.css";
+const emptyDictionary = {};
 
 function subscribe(notify: () => void) {
   window.addEventListener("test:navigation", notify);
@@ -22,6 +24,10 @@ function subscribe(notify: () => void) {
 
 function App() {
   const pathname = useSyncExternalStore(subscribe, () => window.location.pathname);
+  if (pathname === "/language-check")
+    return <LanguageProvider language="it" dictionary={emptyDictionary}>
+      <div className="mx-auto max-w-xl space-y-6 p-5"><LanguageSwitcher /><ReservationForm maxParty={10} phone="" whatsapp="" /></div>
+    </LanguageProvider>;
   if (pathname === "/event-check") {
     const language = new URLSearchParams(window.location.search).get("lang") === "he" ? "he"
       : new URLSearchParams(window.location.search).get("lang") === "es" ? "es" : "it";

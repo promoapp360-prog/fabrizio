@@ -1,4 +1,6 @@
 import { test as base, expect } from "@playwright/test";
+import en from "../../src/lib/i18n/dictionaries/en.json";
+import fr from "../../src/lib/i18n/dictionaries/fr.json";
 import { ORDER_ID, receipt, TOKEN } from "./data";
 import { pickupDay, pickupTimes, romeDay } from "../../src/lib/pickup-times";
 
@@ -43,6 +45,10 @@ async function intercept(context: import("@playwright/test").BrowserContext) {
     const method = request.method(), path = url.pathname;
     const json = (body: unknown) => route.fulfill({ json: body });
     if (url.origin === ORIGIN) {
+      if (method === "GET" && (path === "/api/language/en" || path === "/api/language/fr")) {
+        const code = path.split("/").pop()!;
+        return json({ language: code, dictionary: code === "en" ? en : fr });
+      }
       if (method === "POST" && (path === "/api/online-order" || path === `/api/table/${TOKEN}/order`)) {
         state.orderPosts.push(request.postDataJSON());
         await orderGate;
