@@ -14,8 +14,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const t = makeTranslator(await getDictionary(language));
   return { title: { default: t(s.seo.title), template: `%s · ${s.brand.name}` }, description: t(s.seo.description),
     metadataBase: new URL(process.env.PUBLIC_BASE_URL || "http://localhost:3000"),
-    icons: { icon: s.brand.favicon, apple: "/icon-192.png" }, manifest: "/manifest.webmanifest",
-    openGraph: { title: t(s.seo.title), description: t(s.seo.description), images: [s.brand.logo], locale: (languages.find(item => item.code === language)?.locale ?? "it-IT").replace(/-/g, "_"), type: "website" } };
+    icons: { icon: s.brand.favicon, shortcut: s.brand.favicon, apple: "/icon-192.png" }, manifest: "/manifest.webmanifest",
+    openGraph: { siteName: s.brand.name, title: t(s.seo.title), description: t(s.seo.description), images: [s.brand.logo], locale: (languages.find(item => item.code === language)?.locale ?? "it-IT").replace(/-/g, "_"), type: "website" } };
 }
 export const viewport: Viewport = { themeColor: "#0A0A08", width: "device-width", initialScale: 1 };
 

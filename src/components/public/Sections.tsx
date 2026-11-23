@@ -79,7 +79,7 @@ export async function SectionRenderer({ type, c, s }: { type: string; c: C; s: S
       return <Translated>{(
         <section className="bg-coal py-24"><div className="mx-auto max-w-5xl px-4">
           <Eyebrow>{c.eyebrow ?? "Dalla brace"}</Eyebrow><h2 className="text-3xl md:text-5xl">{c.title ?? "Assaggi dal menu"}</h2>
-          <ul className="mt-10 divide-y divide-cream/10">{items.map(p => (
+          <ul data-nosnippet="" className="mt-10 divide-y divide-cream/10">{items.map(p => (
             <li key={p.id} className="flex items-baseline justify-between gap-4 py-4"><div><p className="font-display text-lg uppercase">{p.name}</p><p className="text-sm text-cream/60">{p.description}</p></div>
               <p className="shrink-0 text-right text-sm text-gold">{p.pricePending ? "Prezzo da definire" : priceLabel(p.priceMode as PriceMode, p.priceCents)}</p></li>))}</ul>
           <Link href="/menu" className="btn-gold mt-10">Menu completo</Link>

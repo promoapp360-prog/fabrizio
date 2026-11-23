@@ -2,6 +2,9 @@ import Translated from "@/components/public/ServerTranslated";
 import { PageSections } from "@/components/public/Sections";
 import { getSettings } from "@/lib/settings";
 import { getUser } from "@/lib/auth";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 // ?preview=1 mostra le bozze (solo a utenti admin loggati).
 export default async function Home({ searchParams: pendingSearchParams }: { searchParams: Promise<{ preview?: string }> }) {

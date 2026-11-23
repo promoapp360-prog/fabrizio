@@ -2,9 +2,10 @@ import { db } from "./db";
 import { RESTAURANT_CONTACTS, RESTAURANT_HOURS } from "./restaurant-content";
 import { stripeConfigured } from "./payment-policy";
 import { DEFAULT_PORTION_WEIGHTS } from "./portions";
+import { DEFAULT_FAVICON, DEFAULT_SEO, resolveFavicon, resolveSeo } from "./seo";
 // Impostazioni con valori di default: l'admin le sovrascrive da /admin/impostazioni.
 export const DEFAULTS = {
-  brand: { name: "Vecciarì", tagline: "Grano & Brace", motto: "Matera", logo: "/brand/logo-naming-oro.webp", mark: "/brand/fiamma-oro.webp", favicon: "/icon-32.png",
+  brand: { name: "Vecciarì", tagline: "Grano & Brace", motto: "Matera", logo: "/brand/logo-naming-oro.webp", mark: "/brand/fiamma-oro.webp", favicon: DEFAULT_FAVICON,
     colors: { ink: "10 10 8", coal: "22 20 16", gold: "233 194 58", goldDeep: "201 150 30", cream: "250 246 236" } },
   contacts: { ...RESTAURANT_CONTACTS, email: "", mapsUrl: "https://maps.app.goo.gl/DCFUrHrw9Mc3NMbV9", instagram: "https://www.instagram.com/vecciari_granoebrace/", facebook: "https://www.facebook.com/share/1EZLANWssE/?mibextid=wwXIfr",
     hours: RESTAURANT_HOURS },
@@ -13,7 +14,7 @@ export const DEFAULTS = {
     portionWeightsGrams: DEFAULT_PORTION_WEIGHTS, coverCents: 0 },
   reservations: { autoConfirm: false, durationMin: 120, maxPartyOnline: 10, minNoticeMin: 60 },
   security: { minPasswordLength: 4 },
-  seo: { title: "Vecciarì — Matera", description: "Vecciarì – Grano & Brace a Matera. Scopri il menu, il mondo della carne e prenota il tuo tavolo." },
+  seo: { ...DEFAULT_SEO },
   cooking: ["Al sangue", "Media-al sangue", "Media", "Media-ben cotta", "Ben cotta"],
 };
 export type Settings = typeof DEFAULTS;
@@ -22,7 +23,10 @@ export async function getSettings(): Promise<Settings> {
   const rows = await db.setting.findMany();
   const s = structuredClone(DEFAULTS) as Record<string, unknown>;
   for (const r of rows) s[r.key] = typeof r.value === "object" && !Array.isArray(r.value) ? { ...(s[r.key] as object), ...(r.value as object) } : r.value;
-  return s as Settings;
+  const settings = s as Settings;
+  settings.seo = resolveSeo(settings.seo);
+  settings.brand.favicon = resolveFavicon(settings.brand.favicon);
+  return settings;
 }
 
 export function integrationStatus() {
