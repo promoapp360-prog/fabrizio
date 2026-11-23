@@ -3,7 +3,7 @@ import Link from "next/link";
 import Translated from "@/components/public/ServerTranslated";
 import { NEW_YEAR_EVENT, newYearMenu } from "@/lib/new-year-event";
 
-const title = "Capodanno con delitto 2026 · Vecciarì, Matera";
+const title = "Cena con delitto · 31 dicembre 2026 · Vecciarì, Matera";
 const description = "Il 31 dicembre 2026 festeggia da Vecciarì a Matera: cena con delitto, menù di fine anno a 60 € a persona e 100 posti totali. Informazioni e prenotazioni su VivoEventi.";
 export const metadata: Metadata = {
   title, description,
@@ -18,7 +18,7 @@ export default function Capodanno() {
       <header className="mx-auto max-w-3xl px-5 pb-12 pt-14 text-center md:pb-16 md:pt-20">
         <Link href="/" className="text-xs text-cream/60 underline-offset-4 hover:text-gold hover:underline">Torna alla home</Link>
         <p className="mt-9 text-xs uppercase tracking-[.25em] text-gold"><time dateTime={NEW_YEAR_EVENT.date}>31 dicembre 2026</time></p>
-        <h1 className="mt-5 text-4xl leading-tight md:text-6xl">Capodanno con delitto da Vecciarì</h1>
+        <h1 className="mt-5 text-4xl leading-tight md:text-6xl">Cena con delitto da Vecciarì</h1>
         <p className="mt-5 text-base text-cream/75 md:text-lg">Una cena di fine anno tra gusto e mistero, nel cuore di Matera.</p>
         <div className="mx-auto mt-8 flex max-w-sm flex-wrap items-center justify-center gap-x-6 gap-y-3 border-y border-gold/25 py-5">
           <p className="text-xl text-gold">60 € a persona</p>

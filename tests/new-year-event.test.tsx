@@ -15,6 +15,8 @@ describe("serata Capodanno Vecciarì", () => {
     expect(NEW_YEAR_EVENT).toMatchObject({ date: "2026-12-31", priceCents: 6000, totalSeats: 100 });
     const page = html();
     for (const text of ["31 dicembre 2026", "60 € a persona", "100 posti totali"]) expect(page).toContain(text);
+    expect(page).toContain("Cena con delitto da Vecciarì");
+    expect(page).not.toContain("Capodanno con delitto");
     expect(page).not.toMatch(/15\s*€|ROMA|704|posti rimasti/);
     expect(metadata.title).toContain("Matera");
   });
@@ -35,7 +37,7 @@ describe("serata Capodanno Vecciarì", () => {
   });
   it.each(languages.filter(language => language.code !== "it"))("copre menù e richiamo in $name", ({ code }) => {
     const dictionary = JSON.parse(readFileSync(new URL(`../src/lib/i18n/dictionaries/${code}.json`, import.meta.url), "utf8"));
-    const messages = ["31 dicembre 2026", "Capodanno con delitto da Vecciarì", "Scopri la serata",
+    const messages = ["31 dicembre 2026", "Cena con delitto da Vecciarì", "Scopri la serata",
       "60 € a persona · 100 posti totali", "Informazioni e prenotazioni su VivoEventi",
       "Comunicare eventuali allergie.", ...newYearMenu.flatMap(section => [section.title, ...section.dishes])];
     for (const message of messages) expect(dictionary[message]?.trim(), `${code}: ${message}`).toBeTruthy();
