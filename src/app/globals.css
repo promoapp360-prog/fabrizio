@@ -56,6 +56,13 @@ html[dir="rtl"] input[type="datetime-local"] { direction: ltr; text-align: start
 .hero-location { margin-top: 6px; font-size: 11px; line-height: 1.2; letter-spacing: .42em; padding-left: .42em; }
 .hero-actions { margin-top: clamp(12px,3.5vw,18px); width: clamp(190px,57vw,245px); gap: 9px; }
 .hero-actions .btn-gold, .hero-actions .btn-ghost { min-height: 44px; padding: 10px 20px; font-size: 14px; }
+.new-year-teaser { position: absolute; top: calc(100% + 14px); left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px; width: min(300px,calc(100vw - 40px)); padding: 12px 15px; border: 1px solid rgb(var(--c-gold) / .42); border-radius: 12px; background: rgb(var(--c-ink) / .78); color: rgb(var(--c-cream)); text-align: center; text-wrap: balance; backdrop-filter: blur(6px); transition: border-color .2s, background-color .2s; }
+.new-year-teaser:hover { border-color: rgb(var(--c-gold) / .8); background: rgb(var(--c-ink) / .9); }
+.new-year-teaser:focus-visible { outline: 2px solid rgb(var(--c-gold)); outline-offset: 4px; }
+.new-year-teaser-date { font-size: 9px; line-height: 1.4; letter-spacing: .18em; text-transform: uppercase; color: rgb(var(--c-gold)); }
+.new-year-teaser-title { font-family: "Aloevera",sans-serif; font-size: 16px; line-height: 1.2; }
+.new-year-teaser-details { font-size: 11px; line-height: 1.5; color: rgb(var(--c-cream) / .8); }
+.new-year-teaser-link { margin-top: 2px; font-size: 11px; line-height: 1.5; color: rgb(var(--c-gold)); }
 @media (min-width: 768px) {
   .restaurant-hero { height: auto; aspect-ratio: 1024 / 539; min-height: 520px; max-height: 880px; }
   .restaurant-hero picture img { object-fit: cover; }

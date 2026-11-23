@@ -5,6 +5,10 @@ import TableOrder from "@/app/t/[token]/TableOrder";
 import OrderReceipt from "@/app/(site)/ordine/[id]/OrderReceipt";
 import { menu, PHONE, TOKEN } from "../data";
 import ReservationForm from "@/app/(site)/prenota/ReservationForm";
+import NewYearEventTeaser from "@/components/public/NewYearEventTeaser";
+import LanguageProvider from "@/components/public/LanguageProvider";
+import es from "@/lib/i18n/dictionaries/es.json";
+import he from "@/lib/i18n/dictionaries/he.json";
 import "@/app/globals.css";
 
 function subscribe(notify: () => void) {
@@ -18,6 +22,21 @@ function subscribe(notify: () => void) {
 
 function App() {
   const pathname = useSyncExternalStore(subscribe, () => window.location.pathname);
+  if (pathname === "/event-check") {
+    const language = new URLSearchParams(window.location.search).get("lang") === "he" ? "he"
+      : new URLSearchParams(window.location.search).get("lang") === "es" ? "es" : "it";
+    return <LanguageProvider language={language} dictionary={language === "he" ? he : language === "es" ? es : {}}>
+      <section className="restaurant-hero relative overflow-hidden bg-ink text-center">
+        <div className="restaurant-hero-content relative mx-auto flex flex-col items-center px-5">
+          <div className="hero-mark" /><h1 className="hero-name">VECCIARÌ</h1><p className="hero-location">MATERA</p>
+          <div className="hero-actions relative flex flex-col justify-center">
+            <a href="/prenota" className="btn-gold">Prenota</a><a href="/menu" className="btn-ghost">Scopri il menu</a>
+            <NewYearEventTeaser />
+          </div>
+        </div>
+      </section>
+    </LanguageProvider>;
+  }
   if (pathname === "/calendar-check")
     return <ReservationForm maxParty={10} phone="" whatsapp="" />;
   if (pathname.startsWith("/ordine/"))

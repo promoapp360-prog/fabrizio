@@ -5,6 +5,7 @@ import { priceLabel, type PriceMode } from "@/lib/pricing";
 import type { Settings } from "@/lib/settings";
 import { loadMenu } from "@/lib/menu";
 import { getMapsDirectionsUrl, getMapsEmbedUrl } from "@/lib/maps";
+import NewYearEventTeaser from "./NewYearEventTeaser";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type C = Record<string, any>;
@@ -23,9 +24,10 @@ export async function SectionRenderer({ type, c, s }: { type: string; c: C; s: S
           <img src={s.brand.mark} alt="Simbolo originale Vecciarì: fiamma e spiga" className="hero-mark w-auto" />
           <h1 className="hero-name text-cream">{c.title || "VECCIARÍ"}</h1>
           <p className="hero-location uppercase text-cream">{c.subtitle || "MATERA"}</p>
-          <div className="hero-actions flex flex-col justify-center">
+          <div className="hero-actions relative flex flex-col justify-center">
             <Link href="/prenota" className="btn-gold">Prenota</Link>
             <Link href="/menu" className="btn-ghost !bg-ink/40 hover:!bg-ink/70 md:!border-cream/70 md:!text-cream">Scopri il menu</Link>
+            <NewYearEventTeaser />
           </div>
         </div>
       </section> : <section className="relative flex min-h-[70vh] items-center justify-center overflow-hidden text-center">
@@ -40,6 +42,7 @@ export async function SectionRenderer({ type, c, s }: { type: string; c: C; s: S
             <Link href="/prenota" className="btn-gold">Prenota</Link><Link href="/menu" className="btn-ghost">Scopri il menu</Link>
             {(s.ordering.takeawayEnabled || s.ordering.deliveryEnabled) && <Link href="/ordina" className="btn-ghost">Ordina</Link>}
           </div>
+          <div className="relative mx-auto w-72"><NewYearEventTeaser /></div>
         </div>
       </section>)}</Translated>;
     case "philosophy": case "quality": case "richtext": return <Translated>{(

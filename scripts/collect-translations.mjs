@@ -69,7 +69,7 @@ await scan(path.join(root, "src/components/public"));
 await scan(path.join(root, "src/app/(site)"));
 await scan(path.join(root, "src/app/t"));
 for (const relative of ["src/app/api/reservations", "src/app/api/online-order", "src/app/api/table", "src/app/api/order"]) await scan(path.join(root, relative));
-for (const relative of ["src/lib/reservation-input.ts", "src/lib/checkout.ts", "src/lib/ordering.ts", "src/lib/pricing.ts", "src/lib/availability.ts", "src/lib/meat-zones.ts", "src/lib/stripe-api.ts", "src/lib/stripe-payments.ts", "src/lib/portions.ts"]) {
+for (const relative of ["src/lib/reservation-input.ts", "src/lib/checkout.ts", "src/lib/ordering.ts", "src/lib/pricing.ts", "src/lib/availability.ts", "src/lib/meat-zones.ts", "src/lib/stripe-api.ts", "src/lib/stripe-payments.ts", "src/lib/portions.ts", "src/lib/new-year-event.ts"]) {
   const full = path.join(root, relative);
   try {
     const body = await fs.readFile(full, "utf8");
